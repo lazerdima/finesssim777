@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -21,7 +20,7 @@ body{
   margin:0;background:var(--bg);color:var(--green);
   font-family:Arial,sans-serif;
 }
-button,input,textarea{font:inherit}
+button,input,textarea,select{font:inherit}
 button{cursor:pointer}
 .topbar{
   padding:22px 5%;display:flex;justify-content:space-between;
@@ -38,13 +37,15 @@ h1{font-size:clamp(32px,5vw,54px);letter-spacing:-2px;margin:0 0 12px}
 }
 .login h1{font-size:34px}
 label{display:block;font-size:12px;margin:15px 0 8px}
-input,textarea{
+input,textarea,select{
   width:100%;padding:13px;border:1px solid var(--line);
   background:transparent;color:var(--green);outline:none;
   border-radius:0;
 }
+select{cursor:pointer}
+select option{background:var(--paper);color:var(--green)}
 textarea{min-height:85px;resize:vertical}
-input:focus,textarea:focus{border-color:var(--green)}
+input:focus,textarea:focus,select:focus{border-color:var(--green)}
 .btn{
   border:0;padding:14px 19px;background:var(--green);
   color:white;font-size:12px;font-weight:bold;
@@ -96,12 +97,46 @@ input:focus,textarea:focus{border-color:var(--green)}
 .status{font-size:11px;color:var(--muted);margin-left:8px}
 .note{font-size:12px;color:var(--muted);line-height:1.5}
 .empty{padding:25px;color:var(--muted);background:var(--paper)}
+.booking-meta{
+  display:flex;gap:12px;flex-wrap:wrap;
+  color:var(--muted);font-size:12px;margin-bottom:16px;
+}
+.booking-info{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px 20px;
+}
+.booking-info div{min-width:0}
+.booking-info strong{
+  display:block;font-size:11px;color:var(--muted);
+  font-weight:normal;margin-bottom:5px;
+}
+.booking-info span{
+  display:block;font-size:14px;overflow-wrap:anywhere;
+  line-height:1.5;
+}
+.booking-message{
+  white-space:pre-wrap;overflow-wrap:anywhere;
+}
+.booking-controls{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;
+  gap:10px;align-items:end;margin-top:18px;
+}
+.booking-controls label{margin:0}
+.booking-controls select{min-width:180px}
+.booking-filter{
+  display:flex;gap:12px;align-items:center;flex-wrap:wrap;
+  margin-bottom:20px;
+}
+.booking-filter select{max-width:240px}
+.booking-count{font-size:12px;color:var(--muted)}
 @media(max-width:650px){
-  .grid{grid-template-columns:1fr}
+  .grid,.booking-info{grid-template-columns:1fr}
   .full{grid-column:auto}
   .container{margin:32px auto}
   .card{padding:18px}
   .topbar{padding:18px 22px}
+  .booking-controls{grid-template-columns:1fr}
+  .booking-controls .btn{width:100%}
 }
 </style>
 </head>
@@ -126,12 +161,13 @@ input:focus,textarea:focus{border-color:var(--green)}
 
 <main id="app" class="container hidden">
   <h1>Управление студией.</h1>
-  <p class="subtitle">Здесь можно редактировать содержимое главного сайта.</p>
+  <p class="subtitle">Здесь можно редактировать содержимое сайта и управлять заявками клиентов.</p>
 
   <div class="tabs">
     <button class="tab active" data-tab="settings">Настройки</button>
     <button class="tab" data-tab="services">Услуги</button>
     <button class="tab" data-tab="staff">Команда</button>
+    <button class="tab" data-tab="bookings">Записи</button>
   </div>
 
   <section id="settings" class="section active">
@@ -238,6 +274,34 @@ input:focus,textarea:focus{border-color:var(--green)}
     <div id="staffList"></div>
   </section>
 
+  <section id="bookings" class="section">
+    <div class="section-head">
+      <h2>Записи клиентов</h2>
+      <button class="btn btn-light" id="refreshBookingsButton">ОБНОВИТЬ ↻</button>
+    </div>
+
+    <div class="booking-filter">
+      <label for="bookingFilter">Показывать:</label>
+      <select id="bookingFilter">
+        <option value="all">Все записи</option>
+        <option value="new">Новые</option>
+        <option value="confirmed">Подтверждённые</option>
+        <option value="completed">Завершённые</option>
+        <option value="cancelled">Отменённые</option>
+      </select>
+      <span id="bookingCount" class="booking-count"></span>
+    </div>
+
+    <div id="bookingsList">
+      <div class="empty">Загрузка записей...</div>
+    </div>
+    <div id="bookingsMessage" class="message" role="status"></div>
+
+    <p class="note">
+      Здесь отображаются заявки, сохранённые в базе данных. Пока публичная форма записи на сайте не подключена, новые заявки автоматически появляться не будут.
+    </p>
+  </section>
+
   <div class="actions" style="margin-top:35px">
     <a class="btn btn-light" href="/" style="text-decoration:none">ОТКРЫТЬ САЙТ ↗</a>
     <button class="btn btn-light" id="logoutButton">ВЫЙТИ</button>
@@ -246,12 +310,22 @@ input:focus,textarea:focus{border-color:var(--green)}
 </main>
 
 <script>
-const $ = (selector) => document.querySelector(selector);
+const $ = selector => document.querySelector(selector);
+
+const STATUS_LABELS = {
+  new: "Новая",
+  confirmed: "Подтверждена",
+  completed: "Завершена",
+  cancelled: "Отменена"
+};
 
 function escapeHTML(value) {
   return String(value ?? "").replace(/[&<>"']/g, char => ({
-    "&":"&amp;", "<":"&lt;", ">":"&gt;",
-    '"':"&quot;", "'":"&#39;"
+    "&":"&amp;",
+    "<":"&lt;",
+    ">":"&gt;",
+    '"':"&quot;",
+    "'":"&#39;"
   })[char]);
 }
 
@@ -302,7 +376,8 @@ async function loadAll() {
   await Promise.all([
     loadSettings(),
     loadServices(),
-    loadStaff()
+    loadStaff(),
+    loadBookings()
   ]);
 }
 
@@ -354,6 +429,10 @@ document.querySelectorAll(".tab").forEach(button => {
     document.querySelectorAll(".section").forEach(section => section.classList.remove("active"));
     button.classList.add("active");
     $("#" + button.dataset.tab).classList.add("active");
+
+    if (button.dataset.tab === "bookings") {
+      loadBookings();
+    }
   });
 });
 
@@ -361,6 +440,7 @@ async function loadSettings() {
   try {
     const settings = await api("/admin/settings");
     const form = $("#settingsForm");
+
     for (const key of ["studio_name", "phone", "address", "working_hours"]) {
       form.elements[key].value = settings[key] || "";
     }
@@ -384,6 +464,7 @@ $("#settingsForm").addEventListener("submit", async event => {
 
 function serviceCard(item) {
   const id = Number(item.id);
+
   return `
   <form class="card edit-service" data-id="${id}">
     <h3>${escapeHTML(item.title)}
@@ -425,6 +506,7 @@ function serviceCard(item) {
 async function loadServices() {
   try {
     const items = await api("/admin/services");
+
     $("#servicesList").innerHTML = items.length
       ? items.map(serviceCard).join("")
       : '<div class="empty">Услуг пока нет.</div>';
@@ -475,6 +557,7 @@ $("#servicesList").addEventListener("submit", async event => {
 
 function staffCard(item) {
   const id = Number(item.id);
+
   return `
   <form class="card edit-staff" data-id="${id}">
     <h3>${escapeHTML(item.name)}
@@ -516,6 +599,7 @@ function staffCard(item) {
 async function loadStaff() {
   try {
     const items = await api("/admin/staff");
+
     $("#staffList").innerHTML = items.length
       ? items.map(staffCard).join("")
       : '<div class="empty">Сотрудников пока нет.</div>';
@@ -561,6 +645,146 @@ $("#staffList").addEventListener("submit", async event => {
     await loadStaff();
   } catch (error) {
     message(form.querySelector(".message"), error.message, "error");
+  }
+});
+
+// ЗАПИСИ КЛИЕНТОВ
+
+let allBookings = [];
+
+function formatDate(value) {
+  if (!value) return "Дата не указана";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+
+  return new Intl.DateTimeFormat("ru-RU", {
+    dateStyle: "medium",
+    timeStyle: "short"
+  }).format(date);
+}
+
+function bookingCard(item) {
+  const id = Number(item.id);
+  const status = STATUS_LABELS[item.status]
+    ? item.status
+    : "new";
+
+  return `
+  <article class="card booking-card" data-id="${id}">
+    <div class="booking-meta">
+      <span>ЗАПИСЬ №${id}</span>
+      <span>${escapeHTML(formatDate(item.created_at))}</span>
+    </div>
+
+    <div class="booking-info">
+      <div>
+        <strong>КЛИЕНТ</strong>
+        <span>${escapeHTML(item.client_name || "Не указано")}</span>
+      </div>
+
+      <div>
+        <strong>ТЕЛЕФОН</strong>
+        <span>${escapeHTML(item.phone || "Не указан")}</span>
+      </div>
+
+      <div>
+        <strong>УСЛУГА</strong>
+        <span>${escapeHTML(item.service || "Не указана")}</span>
+      </div>
+
+      <div>
+        <strong>КОММЕНТАРИЙ</strong>
+        <span class="booking-message">${escapeHTML(item.message || "Нет комментария")}</span>
+      </div>
+    </div>
+
+    <div class="booking-controls">
+      <label>
+        <span class="note">Статус записи</span>
+        <select class="booking-status">
+          ${Object.entries(STATUS_LABELS).map(([key, label]) =>
+            `<option value="${key}" ${status === key ? "selected" : ""}>${label}</option>`
+          ).join("")}
+        </select>
+      </label>
+
+      <button class="btn save-booking-status" type="button">
+        СОХРАНИТЬ СТАТУС
+      </button>
+    </div>
+
+    <div class="message booking-card-message" role="status"></div>
+  </article>`;
+}
+
+function renderBookings() {
+  const filter = $("#bookingFilter").value;
+
+  const filtered = filter === "all"
+    ? allBookings
+    : allBookings.filter(item => item.status === filter);
+
+  $("#bookingCount").textContent =
+    `Всего: ${allBookings.length} · Показано: ${filtered.length}`;
+
+  $("#bookingsList").innerHTML = filtered.length
+    ? filtered.map(bookingCard).join("")
+    : '<div class="empty">Записей с таким статусом пока нет.</div>';
+}
+
+async function loadBookings() {
+  const list = $("#bookingsList");
+  const button = $("#refreshBookingsButton");
+
+  button.disabled = true;
+  list.innerHTML = '<div class="empty">Загружаем записи...</div>';
+
+  try {
+    const data = await api("/admin/bookings");
+
+    if (!Array.isArray(data)) {
+      throw new Error("Сервер вернул некорректный список записей.");
+    }
+
+    allBookings = data;
+    renderBookings();
+    message($("#bookingsMessage"), "");
+  } catch (error) {
+    list.innerHTML = "";
+    message($("#bookingsMessage"), error.message, "error");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+$("#refreshBookingsButton").addEventListener("click", loadBookings);
+
+$("#bookingFilter").addEventListener("change", renderBookings);
+
+$("#bookingsList").addEventListener("click", async event => {
+  const button = event.target.closest(".save-booking-status");
+  if (!button) return;
+
+  const card = button.closest(".booking-card");
+  const id = card.dataset.id;
+  const status = card.querySelector(".booking-status").value;
+  const statusMessage = card.querySelector(".booking-card-message");
+
+  button.disabled = true;
+  message(statusMessage, "Сохраняем...");
+
+  try {
+    await api("/admin/bookings/" + id, "PUT", { status });
+
+    const booking = allBookings.find(item => String(item.id) === String(id));
+    if (booking) booking.status = status;
+
+    renderBookings();
+    message($("#bookingsMessage"), "Статус записи обновлён.", "success");
+  } catch (error) {
+    message(statusMessage, error.message, "error");
+    button.disabled = false;
   }
 });
 
