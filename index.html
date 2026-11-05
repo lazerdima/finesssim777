@@ -1,0 +1,375 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f4f0e7">
+  <meta name="description" content="FINESSSIM Dental Studio — современная стоматология, эстетика улыбки и забота о здоровье зубов.">
+  <title>FINESSSIM — Dental Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --cream: #f4f0e7;
+      --green: #183c32;
+      --green2: #254c3e;
+      --orange: #d76b4b;
+      --lime: #d9e5a6;
+      --ink: #202820;
+      --muted: #777a70;
+      --white: #fffdf8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--cream);
+      color: var(--ink);
+      font-family: 'DM Sans', sans-serif;
+      overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+    button, input, select, textarea { font: inherit; }
+    img { display: block; max-width: 100%; }
+    .container { width: min(1240px, calc(100% - 64px)); margin: auto; }
+    .topline {
+      background: var(--green); color: var(--cream);
+      padding: 10px 20px; text-align: center;
+      font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+    }
+    header {
+      height: 86px; display: flex; align-items: center;
+      border-bottom: 1px solid rgba(24,60,50,.13);
+      position: relative; z-index: 10;
+    }
+    .nav { display: flex; align-items: center; justify-content: space-between; gap: 30px; }
+    .logo { font-family: Manrope,sans-serif; font-size: 25px; font-weight: 800; letter-spacing: -1.8px; color: var(--green); }
+    .logo span { color: var(--orange); }
+    .navlinks { display: flex; align-items: center; gap: 34px; font-size: 13px; font-weight: 600; }
+    .navlinks a { transition: color .2s; }
+    .navlinks a:hover { color: var(--orange); }
+    .nav-cta {
+      background: var(--green); color: white; padding: 14px 21px;
+      border-radius: 3px; font-size: 12px; font-weight: 700;
+      transition: .25s;
+    }
+    .nav-cta:hover { background: var(--orange); transform: translateY(-2px); }
+    .menu-btn { display:none; border:0; background:none; font-size:26px; color:var(--green); cursor:pointer; }
+    .hero { padding: 75px 0 85px; }
+    .hero-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; }
+    .eyebrow { font-size:11px; letter-spacing:2.4px; text-transform:uppercase; font-weight:700; color:var(--orange); }
+    .hero-note { font-size:12px; color:var(--muted); max-width:210px; line-height:1.6; }
+    .hero h1 {
+      font-family: Manrope,sans-serif; font-weight:800;
+      font-size:clamp(75px, 14.5vw, 190px);
+      line-height:.79; letter-spacing:-.105em; color:var(--green);
+      white-space:nowrap; position:relative; z-index:2;
+    }
+    .hero h1 span { color:var(--orange); }
+    .hero-visual { margin-top:42px; height:490px; position:relative; overflow:hidden; background:#d8d5c9; }
+    .hero-visual img { width:100%; height:100%; object-fit:cover; object-position:center 48%; }
+    .hero-sticker {
+      position:absolute; right:35px; bottom:30px; width:132px; height:132px;
+      border-radius:50%; background:var(--lime); color:var(--green);
+      display:flex; align-items:center; justify-content:center; text-align:center;
+      font-size:12px; line-height:1.4; font-weight:800; transform:rotate(10deg);
+      padding:20px;
+    }
+    .hero-bottom { display:flex; justify-content:space-between; align-items:flex-start; padding-top:27px; gap:30px; }
+    .hero-bottom p { max-width:480px; font-size:17px; line-height:1.65; }
+    .round-link {
+      width:52px; height:52px; border-radius:50%; background:var(--orange);
+      color:white; display:grid; place-items:center; font-size:22px;
+      transition:.25s;
+    }
+    .round-link:hover { transform:rotate(45deg); background:var(--green); }
+    .section { padding:110px 0; }
+    .section-head { display:flex; justify-content:space-between; align-items:flex-end; gap:30px; margin-bottom:48px; }
+    .section-head h2 {
+      font-family:Manrope,sans-serif; font-size:clamp(42px,6vw,76px);
+      line-height:.98; letter-spacing:-.065em; color:var(--green); max-width:700px;
+    }
+    .section-head p { color:var(--muted); max-width:260px; font-size:14px; line-height:1.7; }
+    .services { background:var(--green); color:var(--cream); }
+    .services .section-head h2 { color:var(--cream); }
+    .services .section-head p { color:#bdc8bd; }
+    .service-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:1px; background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.2); }
+    .service-card {
+      min-height:245px; padding:34px; background:var(--green);
+      display:flex; flex-direction:column; justify-content:space-between;
+      transition:background .3s;
+    }
+    .service-card:hover { background:var(--green2); }
+    .service-top { display:flex; justify-content:space-between; color:var(--lime); font-size:12px; }
+    .service-card h3 { font-family:Manrope,sans-serif; font-size:32px; letter-spacing:-1.2px; margin-top:45px; }
+    .service-card p { color:#bdc8bd; font-size:13px; line-height:1.6; max-width:390px; margin-top:10px; }
+    .service-arrow { font-size:24px; color:var(--orange); }
+    .about-grid { display:grid; grid-template-columns:1fr 1fr; gap:85px; align-items:center; }
+    .about-image { height:570px; overflow:hidden; background:#d6d0c4; }
+    .about-image img { width:100%; height:100%; object-fit:cover; }
+    .about-copy h2 { font-family:Manrope,sans-serif; font-size:clamp(42px,5vw,65px); color:var(--green); line-height:1; letter-spacing:-.06em; margin:20px 0 25px; }
+    .about-copy>p { color:#686d64; font-size:15px; line-height:1.9; }
+    .values { display:grid; grid-template-columns:1fr 1fr; gap:25px; margin-top:42px; }
+    .value { border-top:1px solid rgba(24,60,50,.25); padding-top:15px; }
+    .value strong { display:block; color:var(--green); font-family:Manrope,sans-serif; font-size:28px; }
+    .value span { color:var(--muted); font-size:12px; }
+    .doctors { background:#e9e5da; }
+    .doctor-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:25px; }
+    .doctor-photo { height:420px; background:#d5d0c4; overflow:hidden; }
+    .doctor-photo img { width:100%; height:100%; object-fit:cover; transition:transform .5s; }
+    .doctor-card:hover .doctor-photo img { transform:scale(1.04); }
+    .doctor-info { padding:20px 0; display:flex; justify-content:space-between; gap:15px; }
+    .doctor-info h3 { color:var(--green); font-family:Manrope,sans-serif; font-size:23px; }
+    .doctor-info p { color:var(--muted); font-size:12px; margin-top:6px; }
+    .doctor-number { color:var(--orange); font-size:13px; font-weight:700; }
+    .manifesto { background:var(--orange); color:var(--green); padding:100px 0; text-align:center; }
+    .manifesto .eyebrow { color:#f8e9d9; }
+    .manifesto h2 { font-family:Manrope,sans-serif; font-size:clamp(43px,7vw,90px); letter-spacing:-.075em; line-height:.98; max-width:950px; margin:30px auto; }
+    .manifesto p { max-width:530px; margin:auto; font-size:15px; line-height:1.8; }
+    .booking { background:var(--green); color:var(--cream); }
+    .booking-grid { display:grid; grid-template-columns:1fr 1fr; gap:90px; }
+    .booking h2 { font-family:Manrope,sans-serif; font-size:clamp(45px,6vw,75px); line-height:.95; letter-spacing:-.07em; margin:20px 0 25px; }
+    .booking-copy p { color:#c2cec4; max-width:400px; font-size:14px; line-height:1.8; }
+    .contact-lines { margin-top:45px; display:grid; gap:18px; }
+    .contact-lines span { color:#b8c5bb; font-size:11px; text-transform:uppercase; letter-spacing:1.5px; display:block; margin-bottom:5px; }
+    .contact-lines a,.contact-lines strong { color:white; font-size:16px; font-weight:600; }
+    .booking-form { background:var(--cream); color:var(--green); padding:38px; }
+    .booking-form h3 { font-family:Manrope,sans-serif; font-size:27px; margin-bottom:25px; }
+    .field { margin-bottom:18px; }
+    .field label { display:block; font-size:11px; color:#73786e; margin-bottom:8px; }
+    .field input,.field select,.field textarea {
+      width:100%; border:0; border-bottom:1px solid #c8c9bd;
+      background:transparent; padding:12px 0; outline:none; color:var(--green);
+      border-radius:0;
+    }
+    .field input:focus,.field select:focus,.field textarea:focus { border-color:var(--orange); }
+    .submit {
+      width:100%; border:0; background:var(--orange); color:white;
+      padding:17px; font-weight:700; cursor:pointer; margin-top:10px; transition:.25s;
+    }
+    .submit:hover { background:var(--green); }
+    .form-note { color:#85877d; font-size:10px; line-height:1.5; margin-top:15px; }
+    footer { background:#112d25; color:var(--cream); padding:35px 0; }
+    .footer-row { display:flex; justify-content:space-between; align-items:center; gap:25px; }
+    .footer-logo { font-family:Manrope,sans-serif; font-weight:800; font-size:25px; letter-spacing:-1.5px; }
+    .footer-logo span { color:var(--orange); }
+    footer p { color:#aebbb1; font-size:11px; }
+    .footer-links { display:flex; gap:22px; font-size:12px; }
+    .reveal { opacity:0; transform:translateY(25px); transition:opacity .7s,transform .7s; }
+    .reveal.visible { opacity:1; transform:translateY(0); }
+    @media(max-width:850px) {
+      .container { width:min(100% - 38px,650px); }
+      .navlinks { display:none; position:absolute; top:85px; left:0; right:0; background:var(--cream); padding:25px; flex-direction:column; align-items:flex-start; border-bottom:1px solid #ddd; }
+      .navlinks.open { display:flex; }
+      .nav-cta { display:none; }
+      .menu-btn { display:block; }
+      .hero { padding:55px 0; }
+      .hero h1 { font-size:15vw; }
+      .hero-visual { height:390px; }
+      .hero-note { display:none; }
+      .section { padding:75px 0; }
+      .about-grid,.booking-grid { grid-template-columns:1fr; gap:40px; }
+      .about-image { height:430px; }
+      .booking-grid { gap:45px; }
+    }
+    @media(max-width:560px) {
+      .topline { font-size:9px; letter-spacing:1.2px; }
+      header { height:72px; }
+      .logo { font-size:22px; }
+      .hero h1 { font-size:14.5vw; }
+      .hero-visual { height:310px; margin-top:28px; }
+      .hero-sticker { width:95px; height:95px; right:15px; bottom:15px; font-size:10px; }
+      .hero-bottom { align-items:center; }
+      .hero-bottom p { font-size:14px; }
+      .section-head { display:block; }
+      .section-head p { margin-top:20px; }
+      .service-grid,.doctor-grid { grid-template-columns:1fr; }
+      .service-card { min-height:210px; padding:25px; }
+      .service-card h3 { font-size:27px; }
+      .doctor-photo { height:370px; }
+      .values { gap:18px; }
+      .booking-form { padding:25px; }
+      .footer-row { flex-direction:column; align-items:flex-start; }
+      .footer-links { flex-wrap:wrap; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topline">A new perspective on your smile · FINESSSIM Dental Studio</div>
+
+  <header>
+    <div class="container nav">
+      <a href="#" class="logo">FINESSSIM<span>.</span></a>
+      <nav class="navlinks" id="navlinks">
+        <a href="#services">Услуги</a>
+        <a href="#about">О студии</a>
+        <a href="#doctors">Команда</a>
+        <a href="#contacts">Контакты</a>
+      </nav>
+      <a class="nav-cta" href="#contacts">Записаться ↗</a>
+      <button class="menu-btn" id="menuBtn" aria-label="Открыть меню">☰</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero container">
+      <div class="hero-top">
+        <span class="eyebrow">Dentistry, reimagined — 01 / 05</span>
+        <p class="hero-note">Улыбка — это не просто эстетика. Это ощущение уверенности в себе.</p>
+      </div>
+      <h1>FINESSSIM<span>.</span></h1>
+      <div class="hero-visual">
+        <img src="https://images.unsplash.com/photo-1606811971618-4486d14f3f99?auto=format&fit=crop&w=1800&q=90" alt="Современная стоматологическая клиника">
+        <div class="hero-sticker">SMILE<br>MORE.<br>WORRY<br>LESS.</div>
+      </div>
+      <div class="hero-bottom">
+        <p>Современная стоматология с вниманием к деталям. Заботимся о здоровье, создаём эстетику и возвращаем удовольствие от улыбки.</p>
+        <a class="round-link" href="#services" aria-label="Услуги">↘</a>
+      </div>
+    </section>
+
+    <section class="section services" id="services">
+      <div class="container">
+        <div class="section-head reveal">
+          <div>
+            <span class="eyebrow">What we do — 02 / 05</span>
+            <h2>Искусство<br>здоровой улыбки.</h2>
+          </div>
+          <p>Комплексный подход к здоровью зубов и эстетике улыбки. Подбираем решение под ваши задачи.</p>
+        </div>
+        <div class="service-grid">
+          <article class="service-card reveal">
+            <div class="service-top"><span>01 / CARE</span><span class="service-arrow">↗</span></div>
+            <div><h3>Лечение зубов</h3><p>Современная диагностика, бережное лечение и внимание к каждой детали.</p></div>
+          </article>
+          <article class="service-card reveal">
+            <div class="service-top"><span>02 / AESTHETICS</span><span class="service-arrow">↗</span></div>
+            <div><h3>Эстетическая стоматология</h3><p>Работа над гармонией улыбки с учётом индивидуальных особенностей.</p></div>
+          </article>
+          <article class="service-card reveal">
+            <div class="service-top"><span>03 / ALIGNMENT</span><span class="service-arrow">↗</span></div>
+            <div><h3>Ортодонтия</h3><p>Планирование коррекции прикуса и создание комфортной улыбки.</p></div>
+          </article>
+          <article class="service-card reveal">
+            <div class="service-top"><span>04 / RESTORE</span><span class="service-arrow">↗</span></div>
+            <div><h3>Имплантация</h3><p>Восстановление утраченных зубов с продуманным планом лечения.</p></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="about">
+      <div class="container about-grid">
+        <div class="about-image reveal">
+          <img src="https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=1100&q=85" alt="Интерьер современной стоматологии">
+        </div>
+        <div class="about-copy reveal">
+          <span class="eyebrow">Our philosophy — 03 / 05</span>
+          <h2>Больше, чем просто стоматология.</h2>
+          <p>FINESSSIM — пространство, где современные технологии встречаются с человеческим отношением. Мы верим, что качественная стоматология начинается с диалога, внимательной диагностики и понятного плана лечения.</p>
+          <div class="values">
+            <div class="value"><strong>01</strong><span>Индивидуальный подход</span></div>
+            <div class="value"><strong>02</strong><span>Внимание к деталям</span></div>
+            <div class="value"><strong>03</strong><span>Современные технологии</span></div>
+            <div class="value"><strong>04</strong><span>Комфортная атмосфера</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section doctors" id="doctors">
+      <div class="container">
+        <div class="section-head reveal">
+          <div>
+            <span class="eyebrow">Meet the team — 04 / 05</span>
+            <h2>Люди, которым<br>можно доверять.</h2>
+          </div>
+          <p>За каждой красивой улыбкой стоит команда специалистов, которым важен результат и ваше спокойствие.</p>
+        </div>
+        <div class="doctor-grid">
+          <article class="doctor-card reveal">
+            <div class="doctor-photo"><img src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=900&q=85" alt="Врач стоматолог"></div>
+            <div class="doctor-info"><div><h3>Александр Волков</h3><p>Стоматолог-терапевт · Демонстрационный профиль</p></div><span class="doctor-number">01</span></div>
+          </article>
+          <article class="doctor-card reveal">
+            <div class="doctor-photo"><img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=900&q=85" alt="Врач стоматолог"></div>
+            <div class="doctor-info"><div><h3>Екатерина Миронова</h3><p>Стоматолог-ортодонт · Демонстрационный профиль</p></div><span class="doctor-number">02</span></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="manifesto">
+      <div class="container reveal">
+        <span class="eyebrow">The FINESSSIM feeling</span>
+        <h2>Улыбайтесь.<br>Это вам к лицу.</h2>
+        <p>Ваша улыбка заслуживает внимания. Начните с консультации — вместе найдём подходящее решение.</p>
+      </div>
+    </section>
+
+    <section class="section booking" id="contacts">
+      <div class="container booking-grid">
+        <div class="booking-copy reveal">
+          <span class="eyebrow">Let's talk — 05 / 05</span>
+          <h2>Время<br>улыбаться.</h2>
+          <p>Оставьте заявку, и мы свяжемся с вами, чтобы обсудить удобное время визита.</p>
+          <div class="contact-lines">
+            <div><span>Телефон</span><a href="tel:+78005553535">+7 (800) 555-35-35</a></div>
+            <div><span>Адрес</span><strong>Нижний Новгород, ул. Примерная, 10</strong></div>
+            <div><span>График</span><strong>Пн–Пт · 09:00–18:00</strong></div>
+          </div>
+        </div>
+        <form class="booking-form reveal" id="bookingForm">
+          <h3>Записаться на консультацию</h3>
+          <div class="field"><label for="name">Ваше имя</label><input id="name" name="name" placeholder="Как к вам обращаться?" required></div>
+          <div class="field"><label for="phone">Номер телефона</label><input id="phone" name="phone" type="tel" placeholder="+7 (___) ___-__-__" required></div>
+          <div class="field"><label for="service">Выберите услугу</label>
+            <select id="service" name="service" required>
+              <option value="">Выберите направление</option>
+              <option>Лечение зубов</option>
+              <option>Эстетическая стоматология</option>
+              <option>Ортодонтия</option>
+              <option>Имплантация</option>
+              <option>Консультация</option>
+            </select>
+          </div>
+          <div class="field"><label for="message">Комментарий (необязательно)</label><textarea id="message" name="message" rows="2" placeholder="Удобное время или ваш вопрос"></textarea></div>
+          <button class="submit" type="submit">Отправить заявку ↗</button>
+          <p class="form-note">Демонстрационная форма: отправка заявок пока не подключена. Не вводите реальные персональные данные.</p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-row">
+      <a href="#" class="footer-logo">FINESSSIM<span>.</span></a>
+      <p>© 2026 FINESSSIM Dental Studio. Demo concept.</p>
+      <div class="footer-links"><a href="#services">Услуги</a><a href="#about">О нас</a><a href="#contacts">Контакты</a></div>
+    </div>
+  </footer>
+
+  <script>
+    const menuBtn = document.getElementById('menuBtn');
+    const navlinks = document.getElementById('navlinks');
+    menuBtn.addEventListener('click', () => navlinks.classList.toggle('open'));
+    navlinks.querySelectorAll('a').forEach(link => link.addEventListener('click', () => navlinks.classList.remove('open')));
+
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    document.getElementById('bookingForm').addEventListener('submit', event => {
+      event.preventDefault();
+      alert('Это демонстрационная форма. Подключение отправки заявок будет следующим этапом.');
+    });
+  </script>
+</body>
+</html>
