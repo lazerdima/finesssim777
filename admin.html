@@ -1,0 +1,293 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f4f0e7">
+  <title>Вход владельца — FINESSSIM</title>
+  <style>
+    :root {
+      --cream: #f4f0e7;
+      --green: #183b32;
+      --muted: #77796f;
+      --lime: #d5e66c;
+      --line: rgba(24,59,50,.16);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--cream);
+      color: var(--green);
+      font-family: Arial, sans-serif;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .panel {
+      width: 100%;
+      max-width: 440px;
+      background: #fffdf8;
+      padding: 42px;
+      border: 1px solid var(--line);
+    }
+
+    .logo {
+      font-size: 25px;
+      font-weight: 900;
+      letter-spacing: -1.5px;
+    }
+
+    .eyebrow {
+      margin-top: 44px;
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    h1 {
+      font-size: 36px;
+      letter-spacing: -1.8px;
+      margin: 12px 0;
+    }
+
+    .description {
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 14px;
+      margin-bottom: 30px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 10px;
+    }
+
+    input {
+      width: 100%;
+      padding: 16px;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--green);
+      font-size: 16px;
+      outline: none;
+      border-radius: 0;
+    }
+
+    input:focus { border-color: var(--green); }
+
+    button {
+      width: 100%;
+      margin-top: 18px;
+      padding: 17px;
+      border: 0;
+      background: var(--green);
+      color: white;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover { background: #285548; }
+    button:disabled { opacity: .6; cursor: wait; }
+
+    .message {
+      min-height: 22px;
+      margin-top: 16px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .error { color: #a33b2e; }
+    .success { color: #28704e; }
+
+    .footer {
+      margin-top: 38px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .dashboard {
+      display: none;
+      margin-top: 28px;
+      padding-top: 24px;
+      border-top: 1px solid var(--line);
+    }
+
+    .dashboard h2 { font-size: 23px; }
+
+    .dashboard p {
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .logout {
+      background: transparent;
+      color: var(--green);
+      border: 1px solid var(--line);
+    }
+
+    @media (max-width: 480px) {
+      .panel { padding: 28px 22px; }
+      h1 { font-size: 30px; }
+    }
+  </style>
+</head>
+<body>
+
+  <main class="panel">
+    <div class="logo">FINESSSIM.</div>
+
+    <div class="eyebrow">Owner access · Private area</div>
+    <h1>Панель владельца.</h1>
+    <p class="description">
+      Войдите, чтобы управлять сайтом, услугами и командой FINESSSIM Dental Studio.
+    </p>
+
+    <form id="loginForm">
+      <label for="password">Пароль владельца</label>
+      <input
+        id="password"
+        type="password"
+        placeholder="Введите пароль"
+        autocomplete="current-password"
+        required
+        maxlength="200"
+      >
+      <button id="loginButton" type="submit">ВОЙТИ ↗</button>
+    </form>
+
+    <div id="message" class="message" role="status" aria-live="polite"></div>
+
+    <section id="dashboard" class="dashboard">
+      <h2>Добро пожаловать!</h2>
+      <p>
+        Вы успешно вошли в систему. Авторизация работает.
+        Следующим шагом подключим управление содержимым сайта.
+      </p>
+      <button id="logoutButton" class="logout" type="button">
+        ВЫЙТИ ИЗ АККАУНТА
+      </button>
+    </section>
+
+    <div class="footer">
+      FINESSSIM Dental Studio · Owner dashboard
+    </div>
+  </main>
+
+  <script>
+    const form = document.getElementById("loginForm");
+    const passwordInput = document.getElementById("password");
+    const loginButton = document.getElementById("loginButton");
+    const message = document.getElementById("message");
+    const dashboard = document.getElementById("dashboard");
+    const logoutButton = document.getElementById("logoutButton");
+
+    function showMessage(text, type = "") {
+      message.textContent = text;
+      message.className = "message " + type;
+    }
+
+    function showDashboard() {
+      form.style.display = "none";
+      dashboard.style.display = "block";
+      showMessage("Вы авторизованы.", "success");
+    }
+
+    async function checkSession() {
+      try {
+        const response = await fetch("/api/me", {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store"
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.authenticated) {
+          showDashboard();
+        }
+      } catch {
+        showMessage("Не удалось проверить авторизацию. Обновите страницу.", "error");
+      }
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const password = passwordInput.value;
+
+      if (!password) return;
+
+      loginButton.disabled = true;
+      loginButton.textContent = "ПРОВЕРКА...";
+      showMessage("");
+
+      try {
+        const response = await fetch("/api/login", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ password })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          showMessage(data.error || "Не удалось войти.", "error");
+          return;
+        }
+
+        passwordInput.value = "";
+        showDashboard();
+
+      } catch {
+        showMessage("Ошибка соединения с сервером.", "error");
+      } finally {
+        loginButton.disabled = false;
+        loginButton.textContent = "ВОЙТИ ↗";
+      }
+    });
+
+    logoutButton.addEventListener("click", async () => {
+      logoutButton.disabled = true;
+
+      try {
+        const response = await fetch("/api/logout", {
+          method: "POST",
+          credentials: "same-origin"
+        });
+
+        if (!response.ok) {
+          showMessage("Не удалось завершить сессию.", "error");
+          return;
+        }
+
+        dashboard.style.display = "none";
+        form.style.display = "block";
+        passwordInput.value = "";
+        showMessage("Вы вышли из аккаунта.", "success");
+
+      } catch {
+        showMessage("Ошибка соединения с сервером.", "error");
+      } finally {
+        logoutButton.disabled = false;
+      }
+    });
+
+    checkSession();
+  </script>
+
+</body>
+</html>
