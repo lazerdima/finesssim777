@@ -1,4 +1,3 @@
-
 const json = (data, status = 200, extraHeaders = {}) =>
   new Response(JSON.stringify(data), {
     status,
@@ -12,6 +11,13 @@ const json = (data, status = 200, extraHeaders = {}) =>
 const encoder = new TextEncoder();
 const COOKIE_NAME = "finesssim_session";
 const SESSION_SECONDS = 60 * 60 * 24 * 7;
+
+const BOOKING_STATUSES = [
+  "new",
+  "confirmed",
+  "completed",
+  "cancelled"
+];
 
 function base64url(bytes) {
   let binary = "";
@@ -230,7 +236,9 @@ async function handleRequest(request, env) {
       for (const key of allowedKeys) {
         if (body[key] !== undefined) {
           const value = safeText(body[key], 300);
-          if (value === null) return json({ error: `Некорректное поле: ${key}` }, 400);
+          if (value === null) {
+            return json({ error: `Некорректное поле: ${key}` }, 400);
+          }
 
           statements.push(
             db.prepare(
@@ -256,8 +264,11 @@ async function handleRequest(request, env) {
 
     if (method === "POST") {
       let body;
-      try { body = await readBody(request); }
-      catch { return json({ error: "Некорректные данные" }, 400); }
+      try {
+        body = await readBody(request);
+      } catch {
+        return json({ error: "Некорректные данные" }, 400);
+      }
 
       const title = safeText(body.title, 120);
       const description = safeText(body.description ?? "", 1000);
@@ -284,8 +295,11 @@ async function handleRequest(request, env) {
 
     if (method === "PUT") {
       let body;
-      try { body = await readBody(request); }
-      catch { return json({ error: "Некорректные данные" }, 400); }
+      try {
+        body = await readBody(request);
+      } catch {
+        return json({ error: "Некорректные данные" }, 400);
+      }
 
       const fields = {
         title: ["title", 120],
@@ -298,7 +312,9 @@ async function handleRequest(request, env) {
       for (const [key, [column, max]] of Object.entries(fields)) {
         if (body[key] !== undefined) {
           const value = safeText(body[key], max);
-          if (value === null) return json({ error: `Некорректное поле: ${key}` }, 400);
+          if (value === null) {
+            return json({ error: `Некорректное поле: ${key}` }, 400);
+          }
           updates.push({ column, value });
         }
       }
@@ -348,8 +364,11 @@ async function handleRequest(request, env) {
 
     if (method === "POST") {
       let body;
-      try { body = await readBody(request); }
-      catch { return json({ error: "Некорректные данные" }, 400); }
+      try {
+        body = await readBody(request);
+      } catch {
+        return json({ error: "Некорректные данные" }, 400);
+      }
 
       const name = safeText(body.name, 120);
       const position = safeText(body.position ?? "", 120);
@@ -376,8 +395,11 @@ async function handleRequest(request, env) {
 
     if (method === "PUT") {
       let body;
-      try { body = await readBody(request); }
-      catch { return json({ error: "Некорректные данные" }, 400); }
+      try {
+        body = await readBody(request);
+      } catch {
+        return json({ error: "Некорректные данные" }, 400);
+      }
 
       const fields = {
         name: ["name", 120],
@@ -390,7 +412,9 @@ async function handleRequest(request, env) {
       for (const [key, [column, max]] of Object.entries(fields)) {
         if (body[key] !== undefined) {
           const value = safeText(body[key], max);
-          if (value === null) return json({ error: `Некорректное поле: ${key}` }, 400);
+          if (value === null) {
+            return json({ error: `Некорректное поле: ${key}` }, 400);
+          }
           updates.push({ column, value });
         }
       }
@@ -427,6 +451,46 @@ async function handleRequest(request, env) {
 
       return json({ success: true, changes: result.meta.changes });
     }
+  }
+
+  // ЗАПИСИ КЛИЕНТОВ
+  if (route === "/api/admin/bookings") {
+    if (method === "GET") {
+      const result = await db.prepare(
+        `SELECT id, client_name, phone, service, message, status, created_at
+         FROM bookings
+         ORDER BY created_at DESC, id DESC`
+      ).all();
+
+      return json(result.results || []);
+    }
+  }
+
+  // Изменение статуса отдельной записи
+  const bookingMatch = route.match(/^\/api\/admin\/bookings\/(\d+)$/);
+  if (bookingMatch && method === "PUT") {
+    const id = Number(bookingMatch[1]);
+
+    let body;
+    try {
+      body = await readBody(request);
+    } catch {
+      return json({ error: "Некорректные данные" }, 400);
+    }
+
+    if (!BOOKING_STATUSES.includes(body.status)) {
+      return json({ error: "Недопустимый статус записи" }, 400);
+    }
+
+    const result = await db.prepare(
+      "UPDATE bookings SET status = ? WHERE id = ?"
+    ).bind(body.status, id).run();
+
+    if (!result.meta.changes) {
+      return json({ error: "Запись не найдена" }, 404);
+    }
+
+    return json({ success: true, id, status: body.status });
   }
 
   return json({ error: "Маршрут не найден" }, 404);
