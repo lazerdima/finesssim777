@@ -2,292 +2,575 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#f4f0e7">
-  <title>Вход владельца — FINESSSIM</title>
-  <style>
-    :root {
-      --cream: #f4f0e7;
-      --green: #183b32;
-      --muted: #77796f;
-      --lime: #d5e66c;
-      --line: rgba(24,59,50,.16);
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background: var(--cream);
-      color: var(--green);
-      font-family: Arial, sans-serif;
-      display: grid;
-      place-items: center;
-      padding: 24px;
-    }
-
-    .panel {
-      width: 100%;
-      max-width: 440px;
-      background: #fffdf8;
-      padding: 42px;
-      border: 1px solid var(--line);
-    }
-
-    .logo {
-      font-size: 25px;
-      font-weight: 900;
-      letter-spacing: -1.5px;
-    }
-
-    .eyebrow {
-      margin-top: 44px;
-      font-size: 11px;
-      letter-spacing: 2px;
-      color: var(--muted);
-      text-transform: uppercase;
-    }
-
-    h1 {
-      font-size: 36px;
-      letter-spacing: -1.8px;
-      margin: 12px 0;
-    }
-
-    .description {
-      color: var(--muted);
-      line-height: 1.6;
-      font-size: 14px;
-      margin-bottom: 30px;
-    }
-
-    label {
-      display: block;
-      font-size: 12px;
-      margin-bottom: 10px;
-    }
-
-    input {
-      width: 100%;
-      padding: 16px;
-      border: 1px solid var(--line);
-      background: transparent;
-      color: var(--green);
-      font-size: 16px;
-      outline: none;
-      border-radius: 0;
-    }
-
-    input:focus { border-color: var(--green); }
-
-    button {
-      width: 100%;
-      margin-top: 18px;
-      padding: 17px;
-      border: 0;
-      background: var(--green);
-      color: white;
-      font-size: 13px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    button:hover { background: #285548; }
-    button:disabled { opacity: .6; cursor: wait; }
-
-    .message {
-      min-height: 22px;
-      margin-top: 16px;
-      font-size: 13px;
-      line-height: 1.5;
-    }
-
-    .error { color: #a33b2e; }
-    .success { color: #28704e; }
-
-    .footer {
-      margin-top: 38px;
-      padding-top: 18px;
-      border-top: 1px solid var(--line);
-      color: var(--muted);
-      font-size: 11px;
-    }
-
-    .dashboard {
-      display: none;
-      margin-top: 28px;
-      padding-top: 24px;
-      border-top: 1px solid var(--line);
-    }
-
-    .dashboard h2 { font-size: 23px; }
-
-    .dashboard p {
-      color: var(--muted);
-      line-height: 1.6;
-      font-size: 14px;
-    }
-
-    .logout {
-      background: transparent;
-      color: var(--green);
-      border: 1px solid var(--line);
-    }
-
-    @media (max-width: 480px) {
-      .panel { padding: 28px 22px; }
-      h1 { font-size: 30px; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f4f0e7">
+<title>Управление — FINESSSIM</title>
+<style>
+:root {
+  --bg:#f4f0e7;
+  --paper:#fffdf8;
+  --green:#183b32;
+  --muted:#77796f;
+  --line:rgba(24,59,50,.16);
+  --lime:#d5e66c;
+  --red:#a33b2e;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--bg);color:var(--green);
+  font-family:Arial,sans-serif;
+}
+button,input,textarea{font:inherit}
+button{cursor:pointer}
+.topbar{
+  padding:22px 5%;display:flex;justify-content:space-between;
+  align-items:center;border-bottom:1px solid var(--line);
+}
+.logo{font-size:25px;font-weight:900;letter-spacing:-1.5px}
+.topbar small{color:var(--muted)}
+.container{max-width:1100px;margin:50px auto;padding:0 24px}
+h1{font-size:clamp(32px,5vw,54px);letter-spacing:-2px;margin:0 0 12px}
+.subtitle{color:var(--muted);line-height:1.6}
+.login{
+  max-width:440px;margin:90px auto;background:var(--paper);
+  padding:38px;border:1px solid var(--line);
+}
+.login h1{font-size:34px}
+label{display:block;font-size:12px;margin:15px 0 8px}
+input,textarea{
+  width:100%;padding:13px;border:1px solid var(--line);
+  background:transparent;color:var(--green);outline:none;
+  border-radius:0;
+}
+textarea{min-height:85px;resize:vertical}
+input:focus,textarea:focus{border-color:var(--green)}
+.btn{
+  border:0;padding:14px 19px;background:var(--green);
+  color:white;font-size:12px;font-weight:bold;
+}
+.btn:hover{background:#285548}
+.btn:disabled{opacity:.5;cursor:wait}
+.btn-light{
+  background:transparent;color:var(--green);
+  border:1px solid var(--line);
+}
+.btn-danger{background:var(--red)}
+.btn-small{padding:10px 13px}
+.login .btn{width:100%;margin-top:18px}
+.message{min-height:22px;margin-top:14px;font-size:13px}
+.error{color:var(--red)}
+.success{color:#28704e}
+.hidden{display:none!important}
+.tabs{
+  display:flex;gap:8px;flex-wrap:wrap;
+  margin:34px 0 25px;
+}
+.tab{
+  padding:13px 18px;border:1px solid var(--line);
+  background:transparent;color:var(--green);
+}
+.tab.active{background:var(--green);color:white}
+.section{display:none}
+.section.active{display:block}
+.section-head{
+  display:flex;justify-content:space-between;
+  align-items:center;gap:15px;flex-wrap:wrap;margin-bottom:20px;
+}
+.section h2{font-size:27px;letter-spacing:-1px}
+.card{
+  background:var(--paper);border:1px solid var(--line);
+  padding:24px;margin-bottom:16px;
+}
+.card h3{margin:0 0 14px;font-size:19px}
+.grid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:0 18px;
+}
+.full{grid-column:1/-1}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}
+.checkbox{
+  display:flex;align-items:center;gap:9px;margin-top:18px;
+}
+.checkbox input{width:auto}
+.status{font-size:11px;color:var(--muted);margin-left:8px}
+.note{font-size:12px;color:var(--muted);line-height:1.5}
+.empty{padding:25px;color:var(--muted);background:var(--paper)}
+@media(max-width:650px){
+  .grid{grid-template-columns:1fr}
+  .full{grid-column:auto}
+  .container{margin:32px auto}
+  .card{padding:18px}
+  .topbar{padding:18px 22px}
+}
+</style>
 </head>
 <body>
 
-  <main class="panel">
-    <div class="logo">FINESSSIM.</div>
+<header class="topbar">
+  <div class="logo">FINESSSIM.</div>
+  <small>OWNER DASHBOARD</small>
+</header>
 
-    <div class="eyebrow">Owner access · Private area</div>
-    <h1>Панель владельца.</h1>
-    <p class="description">
-      Войдите, чтобы управлять сайтом, услугами и командой FINESSSIM Dental Studio.
-    </p>
+<main id="loginPanel" class="login">
+  <h1>Панель владельца.</h1>
+  <p class="subtitle">Войдите для управления сайтом FINESSSIM Dental Studio.</p>
+  <form id="loginForm">
+    <label for="password">Пароль владельца</label>
+    <input id="password" type="password" required
+      autocomplete="current-password" maxlength="200">
+    <button class="btn" id="loginButton">ВОЙТИ ↗</button>
+  </form>
+  <div id="loginMessage" class="message" role="status"></div>
+</main>
 
-    <form id="loginForm">
-      <label for="password">Пароль владельца</label>
-      <input
-        id="password"
-        type="password"
-        placeholder="Введите пароль"
-        autocomplete="current-password"
-        required
-        maxlength="200"
-      >
-      <button id="loginButton" type="submit">ВОЙТИ ↗</button>
+<main id="app" class="container hidden">
+  <h1>Управление студией.</h1>
+  <p class="subtitle">Здесь можно редактировать содержимое главного сайта.</p>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="settings">Настройки</button>
+    <button class="tab" data-tab="services">Услуги</button>
+    <button class="tab" data-tab="staff">Команда</button>
+  </div>
+
+  <section id="settings" class="section active">
+    <div class="section-head">
+      <h2>Настройки студии</h2>
+    </div>
+    <form id="settingsForm" class="card">
+      <label>Название студии</label>
+      <input name="studio_name" maxlength="300" required>
+
+      <label>Телефон</label>
+      <input name="phone" maxlength="300">
+
+      <label>Адрес</label>
+      <input name="address" maxlength="300">
+
+      <label>График работы</label>
+      <input name="working_hours" maxlength="300">
+
+      <div class="actions">
+        <button class="btn" type="submit">СОХРАНИТЬ НАСТРОЙКИ</button>
+      </div>
+      <div class="message" id="settingsMessage" role="status"></div>
+    </form>
+  </section>
+
+  <section id="services" class="section">
+    <div class="section-head">
+      <h2>Услуги</h2>
+      <button class="btn" id="addServiceButton">+ ДОБАВИТЬ УСЛУГУ</button>
+    </div>
+
+    <form id="newService" class="card hidden">
+      <h3>Новая услуга</h3>
+      <div class="grid">
+        <div>
+          <label>Название</label>
+          <input name="title" required maxlength="120">
+        </div>
+        <div>
+          <label>Цена</label>
+          <input name="price" maxlength="80" placeholder="Например, от 3 000 ₽">
+        </div>
+        <div class="full">
+          <label>Описание</label>
+          <textarea name="description" maxlength="1000"></textarea>
+        </div>
+        <div class="full">
+          <label>Ссылка на фотографию (HTTPS)</label>
+          <input name="image_url" type="url" maxlength="1000" placeholder="https://...">
+        </div>
+        <div>
+          <label>Порядок отображения</label>
+          <input name="sort_order" type="number" value="0">
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn" type="submit">СОЗДАТЬ</button>
+        <button class="btn btn-light" type="button" data-cancel="newService">ОТМЕНА</button>
+      </div>
+      <div class="message" id="newServiceMessage"></div>
     </form>
 
-    <div id="message" class="message" role="status" aria-live="polite"></div>
+    <div id="servicesList"></div>
+  </section>
 
-    <section id="dashboard" class="dashboard">
-      <h2>Добро пожаловать!</h2>
-      <p>
-        Вы успешно вошли в систему. Авторизация работает.
-        Следующим шагом подключим управление содержимым сайта.
-      </p>
-      <button id="logoutButton" class="logout" type="button">
-        ВЫЙТИ ИЗ АККАУНТА
-      </button>
-    </section>
-
-    <div class="footer">
-      FINESSSIM Dental Studio · Owner dashboard
+  <section id="staff" class="section">
+    <div class="section-head">
+      <h2>Команда</h2>
+      <button class="btn" id="addStaffButton">+ ДОБАВИТЬ СОТРУДНИКА</button>
     </div>
-  </main>
 
-  <script>
-    const form = document.getElementById("loginForm");
-    const passwordInput = document.getElementById("password");
-    const loginButton = document.getElementById("loginButton");
-    const message = document.getElementById("message");
-    const dashboard = document.getElementById("dashboard");
-    const logoutButton = document.getElementById("logoutButton");
+    <form id="newStaff" class="card hidden">
+      <h3>Новый сотрудник</h3>
+      <div class="grid">
+        <div>
+          <label>Имя</label>
+          <input name="name" required maxlength="120">
+        </div>
+        <div>
+          <label>Должность</label>
+          <input name="position" maxlength="120">
+        </div>
+        <div class="full">
+          <label>Описание</label>
+          <textarea name="description" maxlength="1000"></textarea>
+        </div>
+        <div class="full">
+          <label>Ссылка на фотографию (HTTPS)</label>
+          <input name="photo_url" type="url" maxlength="1000" placeholder="https://...">
+        </div>
+        <div>
+          <label>Порядок отображения</label>
+          <input name="sort_order" type="number" value="0">
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn" type="submit">СОЗДАТЬ</button>
+        <button class="btn btn-light" type="button" data-cancel="newStaff">ОТМЕНА</button>
+      </div>
+      <div class="message" id="newStaffMessage"></div>
+    </form>
 
-    function showMessage(text, type = "") {
-      message.textContent = text;
-      message.className = "message " + type;
-    }
+    <div id="staffList"></div>
+  </section>
 
-    function showDashboard() {
-      form.style.display = "none";
-      dashboard.style.display = "block";
-      showMessage("Вы авторизованы.", "success");
-    }
+  <div class="actions" style="margin-top:35px">
+    <a class="btn btn-light" href="/" style="text-decoration:none">ОТКРЫТЬ САЙТ ↗</a>
+    <button class="btn btn-light" id="logoutButton">ВЫЙТИ</button>
+  </div>
+  <div class="message" id="globalMessage" role="status"></div>
+</main>
 
-    async function checkSession() {
-      try {
-        const response = await fetch("/api/me", {
-          method: "GET",
-          credentials: "same-origin",
-          cache: "no-store"
-        });
+<script>
+const $ = (selector) => document.querySelector(selector);
 
-        const data = await response.json();
+function escapeHTML(value) {
+  return String(value ?? "").replace(/[&<>"']/g, char => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;",
+    '"':"&quot;", "'":"&#39;"
+  })[char]);
+}
 
-        if (response.ok && data.authenticated) {
-          showDashboard();
-        }
-      } catch {
-        showMessage("Не удалось проверить авторизацию. Обновите страницу.", "error");
-      }
-    }
+function message(element, text, type = "") {
+  element.textContent = text;
+  element.className = "message " + type;
+}
 
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
+async function api(path, method = "GET", body = undefined) {
+  const options = {
+    method,
+    credentials: "same-origin",
+    cache: "no-store",
+    headers: {}
+  };
 
-      const password = passwordInput.value;
+  if (body !== undefined) {
+    options.headers["Content-Type"] = "application/json";
+    options.body = JSON.stringify(body);
+  }
 
-      if (!password) return;
+  const response = await fetch("/api" + path, options);
+  const data = await response.json().catch(() => ({}));
 
-      loginButton.disabled = true;
-      loginButton.textContent = "ПРОВЕРКА...";
-      showMessage("");
+  if (response.status === 401) {
+    showLogin();
+    throw new Error("Сессия завершена. Войдите снова.");
+  }
 
-      try {
-        const response = await fetch("/api/login", {
-          method: "POST",
-          credentials: "same-origin",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ password })
-        });
+  if (!response.ok) {
+    throw new Error(data.error || "Ошибка сервера");
+  }
 
-        const data = await response.json();
+  return data;
+}
 
-        if (!response.ok) {
-          showMessage(data.error || "Не удалось войти.", "error");
-          return;
-        }
+function showLogin() {
+  $("#app").classList.add("hidden");
+  $("#loginPanel").classList.remove("hidden");
+}
 
-        passwordInput.value = "";
-        showDashboard();
+function showApp() {
+  $("#loginPanel").classList.add("hidden");
+  $("#app").classList.remove("hidden");
+}
 
-      } catch {
-        showMessage("Ошибка соединения с сервером.", "error");
-      } finally {
-        loginButton.disabled = false;
-        loginButton.textContent = "ВОЙТИ ↗";
-      }
+async function loadAll() {
+  await Promise.all([
+    loadSettings(),
+    loadServices(),
+    loadStaff()
+  ]);
+}
+
+$("#loginForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  const button = $("#loginButton");
+  button.disabled = true;
+  message($("#loginMessage"), "Проверяем пароль...");
+
+  try {
+    await api("/login", "POST", {
+      password: $("#password").value
     });
+    $("#password").value = "";
+    showApp();
+    await loadAll();
+  } catch (error) {
+    message($("#loginMessage"), error.message, "error");
+  } finally {
+    button.disabled = false;
+  }
+});
 
-    logoutButton.addEventListener("click", async () => {
-      logoutButton.disabled = true;
+async function checkSession() {
+  try {
+    const data = await api("/me");
+    if (data.authenticated) {
+      showApp();
+      await loadAll();
+    }
+  } catch (error) {
+    message($("#loginMessage"), error.message, "error");
+  }
+}
 
-      try {
-        const response = await fetch("/api/logout", {
-          method: "POST",
-          credentials: "same-origin"
-        });
+$("#logoutButton").addEventListener("click", async () => {
+  try {
+    await api("/logout", "POST", {});
+    showLogin();
+    message($("#loginMessage"), "Вы вышли из аккаунта.", "success");
+  } catch (error) {
+    message($("#globalMessage"), error.message, "error");
+  }
+});
 
-        if (!response.ok) {
-          showMessage("Не удалось завершить сессию.", "error");
-          return;
-        }
+document.querySelectorAll(".tab").forEach(button => {
+  button.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(tab => tab.classList.remove("active"));
+    document.querySelectorAll(".section").forEach(section => section.classList.remove("active"));
+    button.classList.add("active");
+    $("#" + button.dataset.tab).classList.add("active");
+  });
+});
 
-        dashboard.style.display = "none";
-        form.style.display = "block";
-        passwordInput.value = "";
-        showMessage("Вы вышли из аккаунта.", "success");
+async function loadSettings() {
+  try {
+    const settings = await api("/admin/settings");
+    const form = $("#settingsForm");
+    for (const key of ["studio_name", "phone", "address", "working_hours"]) {
+      form.elements[key].value = settings[key] || "";
+    }
+  } catch (error) {
+    message($("#settingsMessage"), error.message, "error");
+  }
+}
 
-      } catch {
-        showMessage("Ошибка соединения с сервером.", "error");
-      } finally {
-        logoutButton.disabled = false;
-      }
-    });
+$("#settingsForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const body = Object.fromEntries(new FormData(form).entries());
 
-    checkSession();
-  </script>
+  try {
+    await api("/admin/settings", "PUT", body);
+    message($("#settingsMessage"), "Настройки сохранены.", "success");
+  } catch (error) {
+    message($("#settingsMessage"), error.message, "error");
+  }
+});
 
+function serviceCard(item) {
+  const id = Number(item.id);
+  return `
+  <form class="card edit-service" data-id="${id}">
+    <h3>${escapeHTML(item.title)}
+      <span class="status">${item.active ? "АКТИВНА" : "СКРЫТА"}</span>
+    </h3>
+    <div class="grid">
+      <div>
+        <label>Название</label>
+        <input name="title" required maxlength="120" value="${escapeHTML(item.title)}">
+      </div>
+      <div>
+        <label>Цена</label>
+        <input name="price" maxlength="80" value="${escapeHTML(item.price)}">
+      </div>
+      <div class="full">
+        <label>Описание</label>
+        <textarea name="description" maxlength="1000">${escapeHTML(item.description)}</textarea>
+      </div>
+      <div class="full">
+        <label>Ссылка на фотографию (HTTPS)</label>
+        <input name="image_url" type="url" maxlength="1000" value="${escapeHTML(item.image_url)}">
+      </div>
+      <div>
+        <label>Порядок</label>
+        <input name="sort_order" type="number" value="${Number(item.sort_order) || 0}">
+      </div>
+    </div>
+    <label class="checkbox">
+      <input type="checkbox" name="active" ${item.active ? "checked" : ""}>
+      Показывать на сайте
+    </label>
+    <div class="actions">
+      <button class="btn" type="submit">СОХРАНИТЬ</button>
+    </div>
+    <div class="message"></div>
+  </form>`;
+}
+
+async function loadServices() {
+  try {
+    const items = await api("/admin/services");
+    $("#servicesList").innerHTML = items.length
+      ? items.map(serviceCard).join("")
+      : '<div class="empty">Услуг пока нет.</div>';
+  } catch (error) {
+    $("#servicesList").textContent = error.message;
+  }
+}
+
+$("#addServiceButton").addEventListener("click", () => {
+  $("#newService").classList.toggle("hidden");
+});
+
+$("#newService").addEventListener("submit", async event => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const body = Object.fromEntries(new FormData(form).entries());
+  body.sort_order = Number(body.sort_order || 0);
+
+  try {
+    await api("/admin/services", "POST", body);
+    form.reset();
+    form.classList.add("hidden");
+    message($("#newServiceMessage"), "");
+    await loadServices();
+  } catch (error) {
+    message($("#newServiceMessage"), error.message, "error");
+  }
+});
+
+$("#servicesList").addEventListener("submit", async event => {
+  if (!event.target.matches(".edit-service")) return;
+  event.preventDefault();
+
+  const form = event.target;
+  const id = form.dataset.id;
+  const body = Object.fromEntries(new FormData(form).entries());
+  body.sort_order = Number(body.sort_order || 0);
+  body.active = form.elements.active.checked;
+
+  try {
+    await api("/admin/services/" + id, "PUT", body);
+    message(form.querySelector(".message"), "Изменения сохранены.", "success");
+    await loadServices();
+  } catch (error) {
+    message(form.querySelector(".message"), error.message, "error");
+  }
+});
+
+function staffCard(item) {
+  const id = Number(item.id);
+  return `
+  <form class="card edit-staff" data-id="${id}">
+    <h3>${escapeHTML(item.name)}
+      <span class="status">${item.active ? "АКТИВЕН" : "СКРЫТ"}</span>
+    </h3>
+    <div class="grid">
+      <div>
+        <label>Имя</label>
+        <input name="name" required maxlength="120" value="${escapeHTML(item.name)}">
+      </div>
+      <div>
+        <label>Должность</label>
+        <input name="position" maxlength="120" value="${escapeHTML(item.position)}">
+      </div>
+      <div class="full">
+        <label>Описание</label>
+        <textarea name="description" maxlength="1000">${escapeHTML(item.description)}</textarea>
+      </div>
+      <div class="full">
+        <label>Ссылка на фотографию (HTTPS)</label>
+        <input name="photo_url" type="url" maxlength="1000" value="${escapeHTML(item.photo_url)}">
+      </div>
+      <div>
+        <label>Порядок</label>
+        <input name="sort_order" type="number" value="${Number(item.sort_order) || 0}">
+      </div>
+    </div>
+    <label class="checkbox">
+      <input type="checkbox" name="active" ${item.active ? "checked" : ""}>
+      Показывать на сайте
+    </label>
+    <div class="actions">
+      <button class="btn" type="submit">СОХРАНИТЬ</button>
+    </div>
+    <div class="message"></div>
+  </form>`;
+}
+
+async function loadStaff() {
+  try {
+    const items = await api("/admin/staff");
+    $("#staffList").innerHTML = items.length
+      ? items.map(staffCard).join("")
+      : '<div class="empty">Сотрудников пока нет.</div>';
+  } catch (error) {
+    $("#staffList").textContent = error.message;
+  }
+}
+
+$("#addStaffButton").addEventListener("click", () => {
+  $("#newStaff").classList.toggle("hidden");
+});
+
+$("#newStaff").addEventListener("submit", async event => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const body = Object.fromEntries(new FormData(form).entries());
+  body.sort_order = Number(body.sort_order || 0);
+
+  try {
+    await api("/admin/staff", "POST", body);
+    form.reset();
+    form.classList.add("hidden");
+    message($("#newStaffMessage"), "");
+    await loadStaff();
+  } catch (error) {
+    message($("#newStaffMessage"), error.message, "error");
+  }
+});
+
+$("#staffList").addEventListener("submit", async event => {
+  if (!event.target.matches(".edit-staff")) return;
+  event.preventDefault();
+
+  const form = event.target;
+  const id = form.dataset.id;
+  const body = Object.fromEntries(new FormData(form).entries());
+  body.sort_order = Number(body.sort_order || 0);
+  body.active = form.elements.active.checked;
+
+  try {
+    await api("/admin/staff/" + id, "PUT", body);
+    message(form.querySelector(".message"), "Изменения сохранены.", "success");
+    await loadStaff();
+  } catch (error) {
+    message(form.querySelector(".message"), error.message, "error");
+  }
+});
+
+document.querySelectorAll("[data-cancel]").forEach(button => {
+  button.addEventListener("click", () => {
+    $("#" + button.dataset.cancel).classList.add("hidden");
+  });
+});
+
+checkSession();
+</script>
 </body>
 </html>
