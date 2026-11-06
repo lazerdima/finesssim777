@@ -1,4 +1,3 @@
-
 const json = (data, status = 200, extraHeaders = {}) =>
   new Response(JSON.stringify(data), {
     status,
@@ -182,6 +181,80 @@ function validBookingDate(value) {
     date.getUTCMonth() === month - 1 &&
     date.getUTCDate() === day
   );
+}
+
+// --------------------------------
+// Telegram-уведомления
+// --------------------------------
+
+function escapeTelegramHTML(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+async function sendTelegramBookingNotification(env, booking) {
+  const token = env.TELEGRAM_BOT_TOKEN;
+  const chatId = env.TELEGRAM_CHAT_ID;
+
+  if (!token || !chatId) {
+    console.error("Telegram: не настроены секреты");
+    return false;
+  }
+
+  const dateParts = booking.appointmentAt.split("T");
+  const date = dateParts[0].split("-").reverse().join(".");
+  const time = dateParts[1];
+
+  const message = [
+    "🦷 <b>НОВАЯ ЗАПИСЬ FINESSSIM</b>",
+    "",
+    `📋 <b>Заявка №${booking.id}</b>`,
+    "",
+    `👤 <b>Клиент:</b> ${escapeTelegramHTML(booking.clientName)}`,
+    `📞 <b>Телефон:</b> ${escapeTelegramHTML(booking.phone)}`,
+    `🦷 <b>Услуга:</b> ${escapeTelegramHTML(booking.service)}`,
+    `👨‍⚕️ <b>Врач:</b> ${escapeTelegramHTML(booking.staff)}`,
+    `📅 <b>Дата:</b> ${date}`,
+    `🕒 <b>Время:</b> ${time}`,
+    "",
+    `💬 <b>Комментарий:</b> ${escapeTelegramHTML(booking.message || "Нет комментария")}`,
+    "",
+    "Статус: 🟡 Новая"
+  ].join("\n");
+
+  try {
+    const response = await fetch(
+      `https://api.telegram.org/bot${token}/sendMessage`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: message,
+          parse_mode: "HTML",
+          disable_web_page_preview: true
+        })
+      }
+    );
+
+    if (!response.ok) {
+      console.error(
+        "Telegram notification failed:",
+        response.status
+      );
+      return false;
+    }
+
+    return true;
+
+  } catch (error) {
+    console.error("Telegram notification error:", error);
+    return false;
+  }
 }
 
 // --------------------------------
@@ -647,7 +720,7 @@ async function getPublicData(db) {
 // Публичная запись
 // --------------------------------
 
-async function createPublicBooking(request, db) {
+async function createPublicBooking(request, db, env) {
   if (!validOrigin(request)) {
     return json({ error: "Запрос отклонён" }, 403);
   }
@@ -793,6 +866,18 @@ async function createPublicBooking(request, db) {
       409
     );
   }
+
+  // Отправляем уведомление владельцу в Telegram.
+  // Ошибка Telegram не отменяет сохранённую заявку.
+  await sendTelegramBookingNotification(env, {
+    id: result.meta.last_row_id,
+    clientName,
+    phone,
+    service: service.title,
+    staff: staff.name,
+    appointmentAt,
+    message
+  });
 
   return json(
     {
@@ -1797,7 +1882,7 @@ async function handleRequest(request, env) {
 
   // Публичная запись
   if (route === "/api/bookings" && method === "POST") {
-    return createPublicBooking(request, db);
+    return createPublicBooking(request, db, env);
   }
 
   // Все остальные маршруты требуют авторизации
