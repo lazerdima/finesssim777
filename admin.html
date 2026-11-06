@@ -84,8 +84,87 @@ input:focus,textarea:focus,select:focus{border-color:var(--green)}
 .field-hint{font-size:11px;color:var(--muted);line-height:1.5;margin-top:6px}
 .settings-group{margin-bottom:18px}
 .settings-group:last-child{margin-bottom:0}
-.settings-group h3{margin-bottom:5px}
-.settings-group .group-description{font-size:12px;color:var(--muted);line-height:1.5;margin:0 0 16px}
+
+/* ФИНАНСЫ */
+.finance-summary{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:14px;
+  margin-bottom:20px
+}
+.finance-stat{
+  background:var(--paper);
+  border:1px solid var(--line);
+  padding:22px
+}
+.finance-stat-label{
+  color:var(--muted);
+  font-size:12px;
+  margin-bottom:12px
+}
+.finance-stat-value{
+  font-size:clamp(22px,3vw,32px);
+  font-weight:800;
+  letter-spacing:-1px;
+  overflow-wrap:anywhere
+}
+.finance-filters{
+  display:grid;
+  grid-template-columns:1fr 1fr auto;
+  gap:12px;
+  align-items:end
+}
+.finance-filters label{margin:0}
+.finance-filters .btn{height:44px}
+.finance-transaction{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:12px;
+  align-items:center;
+  padding:17px 0;
+  border-bottom:1px solid var(--line)
+}
+.finance-transaction:last-child{border-bottom:0}
+.finance-transaction-title{font-weight:bold;font-size:14px}
+.finance-transaction-description{
+  font-size:12px;
+  color:var(--muted);
+  margin-top:6px;
+  line-height:1.5;
+  overflow-wrap:anywhere
+}
+.finance-transaction-date{
+  font-size:11px;
+  color:var(--muted);
+  margin-top:5px
+}
+.finance-amount{
+  font-weight:bold;
+  white-space:nowrap;
+  text-align:right
+}
+.finance-income{color:#28704e}
+.finance-expense{color:var(--red)}
+.finance-reversal{color:var(--red)}
+.finance-type{
+  display:inline-block;
+  font-size:10px;
+  letter-spacing:.5px;
+  margin-top:7px;
+  color:var(--muted)
+}
+.expense-form-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:0 18px
+}
+.expense-form-grid .full{grid-column:1/-1}
+.finance-empty{
+  padding:25px 10px;
+  text-align:center;
+  color:var(--muted);
+  font-size:13px
+}
 @media(max-width:650px){
   .grid,.booking-info,.appointment-grid{grid-template-columns:1fr}
   .full{grid-column:auto}
@@ -96,6 +175,12 @@ input:focus,textarea:focus,select:focus{border-color:var(--green)}
   .booking-controls .btn{width:100%}
   .appointment-box .btn{width:100%}
   .days-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .finance-summary{grid-template-columns:1fr}
+  .finance-filters{grid-template-columns:1fr}
+  .finance-filters .btn{width:100%}
+  .expense-form-grid{grid-template-columns:1fr}
+  .expense-form-grid .full{grid-column:auto}
+  .finance-transaction{grid-template-columns:1fr auto}
 }
 </style>
 </head>
@@ -119,13 +204,14 @@ input:focus,textarea:focus,select:focus{border-color:var(--green)}
 
 <main id="app" class="container hidden">
   <h1>Управление студией.</h1>
-  <p class="subtitle">Редактируйте сайт, управляйте услугами, командой и записями клиентов.</p>
+  <p class="subtitle">Редактируйте сайт, управляйте услугами, командой, записями и финансами.</p>
 
   <div class="tabs">
     <button class="tab active" data-tab="settings">Сайт и настройки</button>
     <button class="tab" data-tab="services">Услуги</button>
     <button class="tab" data-tab="staff">Команда</button>
     <button class="tab" data-tab="bookings">Записи</button>
+    <button class="tab" data-tab="finance">Финансы</button>
   </div>
 
   <section id="settings" class="section active">
@@ -218,6 +304,97 @@ input:focus,textarea:focus,select:focus{border-color:var(--green)}
     <div id="bookingsMessage" class="message" role="status"></div>
   </section>
 
+  <!-- ФИНАНСЫ -->
+  <section id="finance" class="section">
+    <div class="section-head">
+      <h2>Финансы студии</h2>
+      <button class="btn btn-light" id="refreshFinanceButton" type="button">ОБНОВИТЬ ↻</button>
+    </div>
+
+    <p class="note">
+      Доходы формируются при завершении записей. Расходы добавляются вручную.
+      Отменённые завершённые записи отражаются отдельными операциями.
+    </p>
+
+    <div class="card">
+      <h3>Период отчёта</h3>
+      <div class="finance-filters">
+        <div>
+          <label for="financeFrom">С даты</label>
+          <input id="financeFrom" type="date">
+        </div>
+        <div>
+          <label for="financeTo">По дату</label>
+          <input id="financeTo" type="date">
+        </div>
+        <button class="btn" id="applyFinanceFilter" type="button">ПОКАЗАТЬ</button>
+      </div>
+      <div class="message" id="financeMessage" role="status"></div>
+    </div>
+
+    <div class="finance-summary">
+      <div class="finance-stat">
+        <div class="finance-stat-label">ДОХОДЫ</div>
+        <div class="finance-stat-value finance-income" id="financeIncome">—</div>
+      </div>
+      <div class="finance-stat">
+        <div class="finance-stat-label">РАСХОДЫ</div>
+        <div class="finance-stat-value finance-expense" id="financeExpenses">—</div>
+      </div>
+      <div class="finance-stat">
+        <div class="finance-stat-label">ПРИБЫЛЬ</div>
+        <div class="finance-stat-value" id="financeProfit">—</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Добавить расход</h3>
+      <form id="expenseForm">
+        <div class="expense-form-grid">
+          <div>
+            <label for="expenseCategory">Категория расхода</label>
+            <select id="expenseCategory" name="category" required>
+              <option value="">Выберите категорию</option>
+              <option value="Аренда">Аренда</option>
+              <option value="Зарплата">Зарплата</option>
+              <option value="Материалы">Материалы и расходники</option>
+              <option value="Оборудование">Оборудование</option>
+              <option value="Реклама">Реклама</option>
+              <option value="Коммунальные услуги">Коммунальные услуги</option>
+              <option value="Налоги">Налоги</option>
+              <option value="Прочее">Прочее</option>
+            </select>
+          </div>
+          <div>
+            <label for="expenseAmount">Сумма, ₽</label>
+            <input id="expenseAmount" name="amount" type="number" min="1" max="10000000" step="1" required placeholder="Например, 15000">
+          </div>
+          <div>
+            <label for="expenseDate">Дата расхода</label>
+            <input id="expenseDate" name="date" type="date" required>
+          </div>
+          <div class="full">
+            <label for="expenseDescription">Комментарий</label>
+            <textarea id="expenseDescription" name="description" maxlength="500" placeholder="Например, аренда помещения за ноябрь"></textarea>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn" id="addExpenseButton" type="submit">ДОБАВИТЬ РАСХОД</button>
+        </div>
+        <div class="message" id="expenseMessage" role="status"></div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="section-head">
+        <h3>История операций</h3>
+      </div>
+      <div id="financeTransactions">
+        <div class="finance-empty">Загрузка финансовых операций...</div>
+      </div>
+    </div>
+  </section>
+
   <div class="actions" style="margin-top:35px">
     <a class="btn btn-light" href="/" style="text-decoration:none">ОТКРЫТЬ САЙТ ↗</a>
     <button class="btn btn-light" id="logoutButton" type="button">ВЫЙТИ</button>
@@ -245,7 +422,6 @@ const DAYS = [
   {value:0,label:"Воскресенье"}
 ];
 
-// Все настройки соответствуют разрешённым ключам API.
 const SETTINGS_GROUPS = [
   {
     title:"Основная информация",
@@ -370,6 +546,7 @@ const SETTINGS_GROUPS = [
 
 let allBookings = [];
 let allStaff = [];
+let financeTransactions = [];
 
 function escapeHTML(value) {
   return String(value ?? "").replace(/[&<>"']/g, char => ({
@@ -431,7 +608,7 @@ function showApp() {
 function renderSettingsForm(settings = {}) {
   const container = $("#settingsFields");
 
-  container.innerHTML = SETTINGS_GROUPS.map((group, index) => {
+  container.innerHTML = SETTINGS_GROUPS.map(group => {
     const fieldsHTML = group.fields.map(([key,label,type]) => {
       const value = settings[key] ?? "";
 
@@ -543,7 +720,6 @@ $("#settingsForm").addEventListener("submit", async event => {
 
   body.working_days = selectedDays.join(",");
 
-  // Проверяем URL фотографий и карты.
   const urlKeys = ["hero_image","about_image","map_url"];
 
   for (const key of urlKeys) {
@@ -554,9 +730,7 @@ $("#settingsForm").addEventListener("submit", async event => {
     try {
       const parsed = new URL(value);
 
-      if (parsed.protocol !== "https:") {
-        throw new Error();
-      }
+      if (parsed.protocol !== "https:") throw new Error();
     } catch {
       message(
         $("#settingsMessage"),
@@ -656,6 +830,7 @@ document.querySelectorAll(".tab").forEach(button => {
     $("#" + button.dataset.tab).classList.add("active");
 
     if (button.dataset.tab === "bookings") loadBookings();
+    if (button.dataset.tab === "finance") loadFinance();
   });
 });
 
@@ -910,9 +1085,7 @@ function toDateTimeLocal(value) {
 
   const date = new Date(value);
 
-  if (Number.isNaN(date.getTime())) {
-    return String(value).slice(0,16);
-  }
+  if (Number.isNaN(date.getTime())) return String(value).slice(0,16);
 
   const localDate = new Date(
     date.getTime() - date.getTimezoneOffset() * 60000
@@ -1091,17 +1264,47 @@ $("#bookingsList").addEventListener("click", async event => {
   try {
     if (statusButton) {
       const status = card.querySelector(".booking-status").value;
-
-      await api("/admin/bookings/" + id, "PUT", {status});
-
       const booking = allBookings.find(item =>
         String(item.id) === String(id)
       );
+
+      const body = {status};
+
+      // Если запись впервые переводится в завершённые,
+      // спрашиваем фактическую сумму оплаты.
+      if (booking && booking.status !== "completed" && status === "completed") {
+        const enteredAmount = prompt(
+          "Укажи фактически полученную сумму в рублях.\n\n" +
+          "Если цена услуги указана числом в настройках услуги, " +
+          "оставь поле пустым — сервер использует эту цену."
+        );
+
+        if (enteredAmount === null) {
+          button.disabled = false;
+          message(statusMessage, "Изменение отменено.");
+          return;
+        }
+
+        if (enteredAmount.trim() !== "") {
+          const amount = Number(enteredAmount.trim());
+
+          if (!Number.isSafeInteger(amount) || amount < 1 || amount > 10000000) {
+            throw new Error("Сумма должна быть целым числом от 1 до 10 000 000 рублей.");
+          }
+
+          body.income_amount = amount;
+        }
+      }
+
+      await api("/admin/bookings/" + id, "PUT", body);
 
       if (booking) booking.status = status;
 
       renderBookings();
       message($("#bookingsMessage"), "Статус записи обновлён.", "success");
+
+      // Обновляем финансовые данные, если они уже открывались.
+      if (financeLoaded) loadFinance();
     }
 
     if (appointmentButton) {
@@ -1139,6 +1342,265 @@ $("#bookingsList").addEventListener("click", async event => {
 });
 
 // --------------------------------
+// ФИНАНСЫ
+// --------------------------------
+
+let financeLoaded = false;
+
+function localDateString(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function initializeFinanceDates() {
+  const today = localDateString();
+  const firstDay = new Date();
+  firstDay.setDate(1);
+
+  $("#financeFrom").value = localDateString(firstDay);
+  $("#financeTo").value = today;
+  $("#expenseDate").value = today;
+}
+
+function rubles(value) {
+  const number = Number(value || 0);
+
+  return new Intl.NumberFormat("ru-RU", {
+    style:"currency",
+    currency:"RUB",
+    maximumFractionDigits:0
+  }).format(Number.isFinite(number) ? number : 0);
+}
+
+function firstNumber(object, keys) {
+  for (const key of keys) {
+    if (object && object[key] !== undefined && object[key] !== null) {
+      const value = Number(object[key]);
+      if (Number.isFinite(value)) return value;
+    }
+  }
+  return 0;
+}
+
+function getFinanceSummary(data) {
+  const summary = data.summary || data.totals || data;
+
+  const income = firstNumber(summary, [
+    "income",
+    "total_income",
+    "revenue",
+    "income_total",
+    "totalIncome"
+  ]);
+
+  const expenses = firstNumber(summary, [
+    "expenses",
+    "total_expenses",
+    "expense",
+    "expense_total",
+    "totalExpenses"
+  ]);
+
+  const profit = firstNumber(summary, [
+    "profit",
+    "net",
+    "balance",
+    "total_profit"
+  ]);
+
+  return {
+    income,
+    expenses,
+    profit: summary.profit !== undefined ||
+      summary.net !== undefined ||
+      summary.balance !== undefined ||
+      summary.total_profit !== undefined
+      ? profit
+      : income - expenses
+  };
+}
+
+function getFinanceItems(data) {
+  if (Array.isArray(data.transactions)) return data.transactions;
+  if (Array.isArray(data.history)) return data.history;
+  if (Array.isArray(data.items)) return data.items;
+  if (Array.isArray(data.operations)) return data.operations;
+  if (Array.isArray(data.data)) return data.data;
+  return [];
+}
+
+function transactionTypeLabel(type) {
+  if (type === "income") return "ДОХОД";
+  if (type === "expense") return "РАСХОД";
+  if (type === "income_reversal") return "ВОЗВРАТ ДОХОДА";
+  return "ОПЕРАЦИЯ";
+}
+
+function transactionAmountClass(type) {
+  if (type === "income") return "finance-income";
+  if (type === "expense") return "finance-expense";
+  if (type === "income_reversal") return "finance-reversal";
+  return "";
+}
+
+function transactionTitle(item) {
+  if (item.type === "income") {
+    return item.service_title || item.description || "Доход по записи";
+  }
+
+  if (item.type === "income_reversal") {
+    return item.description || "Отмена дохода по записи";
+  }
+
+  return item.category || item.description || "Расход";
+}
+
+function transactionDescription(item) {
+  const parts = [];
+
+  if (item.client_name) parts.push("Клиент: " + item.client_name);
+  if (item.category && item.type !== "expense") parts.push(item.category);
+  if (item.description && item.description !== transactionTitle(item)) {
+    parts.push(item.description);
+  }
+  if (item.booking_id) parts.push("Запись №" + item.booking_id);
+
+  return parts.join(" · ");
+}
+
+function renderFinanceTransactions(items) {
+  const container = $("#financeTransactions");
+
+  financeTransactions = Array.isArray(items) ? items : [];
+
+  if (!financeTransactions.length) {
+    container.innerHTML = '<div class="finance-empty">За выбранный период операций пока нет.</div>';
+    return;
+  }
+
+  container.innerHTML = financeTransactions.map(item => {
+    const type = item.type || "";
+    const amount = Number(item.amount || 0);
+    const date = item.transaction_date || item.date || item.created_at || "";
+
+    const sign = type === "income" ? "+" : "−";
+
+    return `
+      <div class="finance-transaction">
+        <div>
+          <div class="finance-transaction-title">${escapeHTML(transactionTitle(item))}</div>
+          <div class="finance-transaction-description">${escapeHTML(transactionDescription(item))}</div>
+          <div class="finance-transaction-date">${escapeHTML(date)}</div>
+          <span class="finance-type">${transactionTypeLabel(type)}</span>
+        </div>
+        <div class="finance-amount ${transactionAmountClass(type)}">
+          ${sign}${rubles(amount)}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+async function loadFinance() {
+  const button = $("#refreshFinanceButton");
+  const container = $("#financeTransactions");
+
+  const from = $("#financeFrom").value;
+  const to = $("#financeTo").value;
+
+  if (!from || !to) {
+    message($("#financeMessage"), "Выбери начальную и конечную даты.", "error");
+    return;
+  }
+
+  if (from > to) {
+    message($("#financeMessage"), "Начальная дата не может быть позже конечной.", "error");
+    return;
+  }
+
+  button.disabled = true;
+  container.innerHTML = '<div class="finance-empty">Загружаем операции...</div>';
+  message($("#financeMessage"), "Загружаем финансовые данные...");
+
+  try {
+    const data = await api(
+      "/admin/finance?from=" + encodeURIComponent(from) +
+      "&to=" + encodeURIComponent(to)
+    );
+
+    const summary = getFinanceSummary(data);
+
+    $("#financeIncome").textContent = rubles(summary.income);
+    $("#financeExpenses").textContent = rubles(summary.expenses);
+    $("#financeProfit").textContent = rubles(summary.profit);
+
+    $("#financeProfit").className =
+      "finance-stat-value " +
+      (summary.profit >= 0 ? "finance-income" : "finance-expense");
+
+    renderFinanceTransactions(getFinanceItems(data));
+
+    message($("#financeMessage"), "Финансовые данные обновлены.", "success");
+    financeLoaded = true;
+  } catch (error) {
+    container.innerHTML = '<div class="finance-empty">Не удалось загрузить операции.</div>';
+    message($("#financeMessage"), error.message, "error");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+$("#refreshFinanceButton").addEventListener("click", loadFinance);
+$("#applyFinanceFilter").addEventListener("click", loadFinance);
+
+$("#expenseForm").addEventListener("submit", async event => {
+  event.preventDefault();
+
+  const form = event.currentTarget;
+  const button = $("#addExpenseButton");
+
+  const amount = Number($("#expenseAmount").value);
+  const category = $("#expenseCategory").value;
+  const date = $("#expenseDate").value;
+  const description = $("#expenseDescription").value.trim();
+
+  if (!Number.isSafeInteger(amount) || amount < 1 || amount > 10000000) {
+    message($("#expenseMessage"), "Сумма должна быть целым числом от 1 до 10 000 000 рублей.", "error");
+    return;
+  }
+
+  if (!category || !date) {
+    message($("#expenseMessage"), "Заполни категорию и дату расхода.", "error");
+    return;
+  }
+
+  button.disabled = true;
+  message($("#expenseMessage"), "Добавляем расход...");
+
+  try {
+    await api("/admin/finance/expenses", "POST", {
+      category,
+      amount,
+      date,
+      description
+    });
+
+    form.reset();
+    $("#expenseDate").value = localDateString();
+
+    message($("#expenseMessage"), "Расход успешно добавлен.", "success");
+
+    await loadFinance();
+  } catch (error) {
+    message($("#expenseMessage"), error.message, "error");
+  } finally {
+    button.disabled = false;
+  }
+});
+
+// --------------------------------
 // ОТМЕНА ФОРМ
 // --------------------------------
 
@@ -1148,9 +1610,9 @@ document.querySelectorAll("[data-cancel]").forEach(button => {
   });
 });
 
-// Запускаем проверку авторизации.
+// Подготовка дат и проверка авторизации.
+initializeFinanceDates();
 checkSession();
 </script>
 </body>
 </html>
-
