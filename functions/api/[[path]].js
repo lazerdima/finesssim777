@@ -99,6 +99,36 @@ function safeText(value, maxLength = 500) {
   return cleaned;
 }
 
+function validAppointment(value) {
+  if (typeof value !== "string" ||
+      !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const [datePart, timePart] = value.split("T");
+  const [year, month, day] = datePart.split("-").map(Number);
+  const [hour, minute] = timePart.split(":").map(Number);
+  const date = new Date(year, month - 1, day, hour, minute);
+
+  return date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day &&
+    date.getHours() === hour &&
+    date.getMinutes() === minute;
+}
+
+async function findActiveService(db, id) {
+  return db.prepare(
+    "SELECT id, title FROM services WHERE id = ? AND active = 1"
+  ).bind(id).first();
+}
+
+async function findActiveStaff(db, id) {
+  return db.prepare(
+    "SELECT id, name FROM staff WHERE id = ? AND active = 1"
+  ).bind(id).first();
+}
+
 function validOrigin(request) {
   const origin = request.headers.get("Origin");
   return !origin || origin === new URL(request.url).origin;
@@ -186,8 +216,7 @@ async function handleRequest(request, env) {
       { "Set-Cookie": sessionCookie(token) }
     );
   }
-
-  if (route === "/api/logout" && method === "POST") {
+    if (route === "/api/logout" && method === "POST") {
     if (!validOrigin(request)) return json({ error: "Запрос отклонён" }, 403);
     return json(
       { success: true },
@@ -452,24 +481,149 @@ async function handleRequest(request, env) {
       return json({ success: true, changes: result.meta.changes });
     }
   }
-
-  // ЗАПИСИ КЛИЕНТОВ
+    // ЗАПИСИ КЛИЕНТОВ
   if (route === "/api/admin/bookings") {
     if (method === "GET") {
       const result = await db.prepare(
-        `SELECT id, client_name, phone, service, message, status, created_at
-         FROM bookings
-         ORDER BY created_at DESC, id DESC`
+        `SELECT
+           b.id,
+           b.client_name,
+           b.phone,
+           b.service,
+           b.message,
+           b.status,
+           b.created_at,
+           b.appointment_at,
+           b.staff_id,
+           b.service_id,
+           b.notes,
+           b.updated_at,
+           s.title AS service_title,
+           st.name AS staff_name
+         FROM bookings b
+         LEFT JOIN services s ON s.id = b.service_id
+         LEFT JOIN staff st ON st.id = b.staff_id
+         ORDER BY
+           CASE WHEN b.appointment_at IS NULL OR b.appointment_at = '' THEN 1 ELSE 0 END,
+           b.appointment_at ASC,
+           b.created_at DESC,
+           b.id DESC`
       ).all();
 
       return json(result.results || []);
     }
-  }
 
-  // Изменение статуса отдельной записи
+    if (method === "POST") {
+      let body;
+      try {
+        body = await readBody(request);
+      } catch {
+        return json({ error: "Некорректные данные" }, 400);
+      }
+
+      const clientName = safeText(body.client_name, 120);
+      const phone = safeText(body.phone, 40);
+      const serviceNameInput = safeText(body.service ?? "", 120);
+      const notes = safeText(body.notes ?? body.message ?? "", 2000);
+      const appointmentAt = body.appointment_at;
+      const status = body.status ?? "new";
+
+      if (!clientName || !phone || serviceNameInput === null ||
+          notes === null || !validAppointment(appointmentAt) ||
+          !BOOKING_STATUSES.includes(status)) {
+        return json({ error: "Проверьте имя, телефон, услугу, дату и время записи" }, 400);
+      }
+
+      let serviceId = null;
+      let serviceName = serviceNameInput;
+
+      if (body.service_id !== undefined && body.service_id !== null && body.service_id !== "") {
+        serviceId = Number(body.service_id);
+        if (!Number.isInteger(serviceId) || serviceId <= 0) {
+          return json({ error: "Некорректная услуга" }, 400);
+        }
+
+        const service = await findActiveService(db, serviceId);
+        if (!service) return json({ error: "Выбранная услуга не найдена или отключена" }, 400);
+        serviceName = service.title;
+      } else if (serviceName) {
+        const service = await db.prepare(
+          "SELECT id, title FROM services WHERE active = 1 AND LOWER(TRIM(title)) = LOWER(TRIM(?)) LIMIT 1"
+        ).bind(serviceName).first();
+
+        if (service) {
+          serviceId = service.id;
+          serviceName = service.title;
+        }
+      }
+
+      if (!serviceName) {
+        return json({ error: "Выберите услугу" }, 400);
+      }
+
+      let staffId = null;
+      if (body.staff_id !== undefined && body.staff_id !== null && body.staff_id !== "") {
+        staffId = Number(body.staff_id);
+        if (!Number.isInteger(staffId) || staffId <= 0) {
+          return json({ error: "Некорректный сотрудник" }, 400);
+        }
+
+        const staff = await findActiveStaff(db, staffId);
+        if (!staff) return json({ error: "Выбранный сотрудник не найден или отключён" }, 400);
+      }
+
+      // Защита от двух записей к одному врачу на одно и то же время.
+      // Длительность услуги в текущей схеме базы пока не хранится.
+      if (staffId !== null) {
+        const conflict = await db.prepare(
+          `SELECT id FROM bookings
+           WHERE staff_id = ?
+             AND appointment_at = ?
+             AND status != 'cancelled'
+           LIMIT 1`
+        ).bind(staffId, appointmentAt).first();
+
+        if (conflict) {
+          return json({ error: "У этого врача уже есть запись на выбранное время" }, 409);
+        }
+      }
+
+      const result = await db.prepare(
+        `INSERT INTO bookings
+          (client_name, phone, service, message, status, appointment_at,
+           staff_id, service_id, notes, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`
+      ).bind(
+        clientName,
+        phone,
+        serviceName,
+        notes,
+        status,
+        appointmentAt,
+        staffId,
+        serviceId,
+        notes
+      ).run();
+
+      return json({ success: true, id: result.meta.last_row_id }, 201);
+    }
+  }
+    // Изменение статуса и данных отдельной записи
   const bookingMatch = route.match(/^\/api\/admin\/bookings\/(\d+)$/);
-  if (bookingMatch && method === "PUT") {
+  if (bookingMatch && (method === "PUT" || method === "DELETE")) {
     const id = Number(bookingMatch[1]);
+
+    if (method === "DELETE") {
+      const result = await db.prepare(
+        "UPDATE bookings SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+      ).bind(id).run();
+
+      if (!result.meta.changes) {
+        return json({ error: "Запись не найдена" }, 404);
+      }
+
+      return json({ success: true, id, status: "cancelled" });
+    }
 
     let body;
     try {
@@ -478,19 +632,133 @@ async function handleRequest(request, env) {
       return json({ error: "Некорректные данные" }, 400);
     }
 
-    if (!BOOKING_STATUSES.includes(body.status)) {
-      return json({ error: "Недопустимый статус записи" }, 400);
+    const current = await db.prepare(
+      `SELECT id, client_name, phone, service, status, appointment_at,
+              staff_id, service_id, notes, message
+       FROM bookings WHERE id = ?`
+    ).bind(id).first();
+
+    if (!current) return json({ error: "Запись не найдена" }, 404);
+
+    const updates = [];
+    const addUpdate = (column, value) => updates.push({ column, value });
+
+    if (body.status !== undefined) {
+      if (!BOOKING_STATUSES.includes(body.status)) {
+        return json({ error: "Недопустимый статус записи" }, 400);
+      }
+      addUpdate("status", body.status);
     }
 
+    if (body.client_name !== undefined) {
+      const value = safeText(body.client_name, 120);
+      if (!value) return json({ error: "Проверьте имя клиента" }, 400);
+      addUpdate("client_name", value);
+    }
+
+    if (body.phone !== undefined) {
+      const value = safeText(body.phone, 40);
+      if (!value) return json({ error: "Проверьте телефон клиента" }, 400);
+      addUpdate("phone", value);
+    }
+
+    if (body.notes !== undefined || body.message !== undefined) {
+      const value = safeText(body.notes ?? body.message, 2000);
+      if (value === null) return json({ error: "Слишком длинное примечание" }, 400);
+      addUpdate("notes", value);
+      addUpdate("message", value);
+    }
+
+    let nextServiceId = current.service_id;
+    let nextServiceName = current.service || "";
+
+    if (body.service_id !== undefined) {
+      if (body.service_id === null || body.service_id === "") {
+        nextServiceId = null;
+        if (body.service === undefined) nextServiceName = "";
+      } else {
+        nextServiceId = Number(body.service_id);
+        if (!Number.isInteger(nextServiceId) || nextServiceId <= 0) {
+          return json({ error: "Некорректная услуга" }, 400);
+        }
+        const service = await findActiveService(db, nextServiceId);
+        if (!service) return json({ error: "Выбранная услуга не найдена или отключена" }, 400);
+        nextServiceName = service.title;
+      }
+      addUpdate("service_id", nextServiceId);
+      addUpdate("service", nextServiceName);
+    } else if (body.service !== undefined) {
+      const value = safeText(body.service, 120);
+      if (!value) return json({ error: "Выберите услугу" }, 400);
+      nextServiceName = value;
+
+      const service = await db.prepare(
+        "SELECT id, title FROM services WHERE active = 1 AND LOWER(TRIM(title)) = LOWER(TRIM(?)) LIMIT 1"
+      ).bind(value).first();
+
+      nextServiceId = service ? service.id : null;
+      if (service) nextServiceName = service.title;
+
+      addUpdate("service", nextServiceName);
+      addUpdate("service_id", nextServiceId);
+    }
+
+    let nextStaffId = current.staff_id;
+    if (body.staff_id !== undefined) {
+      if (body.staff_id === null || body.staff_id === "") {
+        nextStaffId = null;
+      } else {
+        nextStaffId = Number(body.staff_id);
+        if (!Number.isInteger(nextStaffId) || nextStaffId <= 0) {
+          return json({ error: "Некорректный сотрудник" }, 400);
+        }
+        const staff = await findActiveStaff(db, nextStaffId);
+        if (!staff) return json({ error: "Выбранный сотрудник не найден или отключён" }, 400);
+      }
+      addUpdate("staff_id", nextStaffId);
+    }
+
+    let nextAppointmentAt = current.appointment_at;
+    if (body.appointment_at !== undefined) {
+      if (!validAppointment(body.appointment_at)) {
+        return json({ error: "Укажите корректные дату и время в формате ГГГГ-ММ-ДДTЧЧ:ММ" }, 400);
+      }
+      nextAppointmentAt = body.appointment_at;
+      addUpdate("appointment_at", nextAppointmentAt);
+    }
+
+    if (!updates.length) return json({ error: "Нет изменений" }, 400);
+
+    if (nextStaffId !== null && nextAppointmentAt &&
+        (body.staff_id !== undefined || body.appointment_at !== undefined) &&
+        (body.status === undefined || body.status !== "cancelled")) {
+      const conflict = await db.prepare(
+        `SELECT id FROM bookings
+         WHERE staff_id = ?
+           AND appointment_at = ?
+           AND status != 'cancelled'
+           AND id != ?
+         LIMIT 1`
+      ).bind(nextStaffId, nextAppointmentAt, id).first();
+
+      if (conflict) {
+        return json({ error: "У этого врача уже есть запись на выбранное время" }, 409);
+      }
+    }
+
+    const setClause = updates.map(item => `${item.column} = ?`).join(", ");
+    const values = updates.map(item => item.value);
     const result = await db.prepare(
-      "UPDATE bookings SET status = ? WHERE id = ?"
-    ).bind(body.status, id).run();
+      `UPDATE bookings
+       SET ${setClause}, updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?`
+    ).bind(...values, id).run();
 
     if (!result.meta.changes) {
-      return json({ error: "Запись не найдена" }, 404);
+      return json({ error: "Не удалось обновить запись" }, 400);
     }
 
-    return json({ success: true, id, status: body.status });
+    return json({ success: true, id, changes: result.meta.changes });
   }
 
   return json({ error: "Маршрут не найден" }, 404);
