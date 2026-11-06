@@ -26,6 +26,7 @@
 
     * {box-sizing:border-box;margin:0;padding:0}
     html {scroll-behavior:smooth}
+
     body {
       background:var(--cream);
       color:var(--ink);
@@ -610,10 +611,12 @@
       .hero-visual {height:390px}
       .hero-note {display:none}
       .section {padding:75px 0}
+
       .about-grid,.booking-grid {
         grid-template-columns:1fr;
         gap:40px;
       }
+
       .about-image {height:430px}
       .booking-grid {gap:45px}
     }
@@ -624,6 +627,7 @@
       .logo {font-size:22px}
       .hero h1 {font-size:14.5vw}
       .hero-visual {height:310px;margin-top:28px}
+
       .hero-sticker {
         width:95px;
         height:95px;
@@ -631,6 +635,7 @@
         bottom:15px;
         font-size:10px;
       }
+
       .hero-bottom {align-items:center}
       .hero-bottom p {font-size:14px}
       .section-head {display:block}
@@ -641,11 +646,21 @@
       .doctor-photo {height:370px}
       .values {gap:18px}
       .booking-form {padding:25px}
+
       .footer-row {
         flex-direction:column;
         align-items:flex-start;
       }
+
       .footer-links {flex-wrap:wrap}
+    }
+
+    @media(prefers-reduced-motion:reduce) {
+      html {scroll-behavior:auto}
+      *,*::before,*::after {
+        animation-duration:.01ms !important;
+        transition-duration:.01ms !important;
+      }
     }
   </style>
 </head>
@@ -679,7 +694,10 @@
       <h1>FINESSSIM<span>.</span></h1>
 
       <div class="hero-visual">
-        <img src="https://images.unsplash.com/photo-1606811971618-4486d14f3f99?auto=format&fit=crop&w=1800&q=90" alt="Современная стоматологическая клиника">
+        <img
+          src="https://images.unsplash.com/photo-1606811971618-4486d14f3f99?auto=format&fit=crop&w=1800&q=90"
+          alt="Современная стоматологическая клиника"
+        >
         <div class="hero-sticker">SMILE<br>MORE.<br>WORRY<br>LESS.</div>
       </div>
 
@@ -701,8 +719,14 @@
 
         <div class="service-grid" id="serviceGrid">
           <article class="service-card">
-            <div class="service-top"><span>01 / CARE</span><span class="service-arrow">↗</span></div>
-            <div><h3>Услуги</h3><p>Загружаем услуги...</p></div>
+            <div class="service-top">
+              <span>01 / CARE</span>
+              <span class="service-arrow">↗</span>
+            </div>
+            <div>
+              <h3>Услуги</h3>
+              <p>Загружаем услуги...</p>
+            </div>
           </article>
         </div>
       </div>
@@ -711,7 +735,11 @@
     <section class="section" id="about">
       <div class="container about-grid">
         <div class="about-image reveal">
-          <img src="https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=1100&q=85" alt="Интерьер современной стоматологии">
+          <img
+            src="https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=1100&q=85"
+            alt="Интерьер современной стоматологии"
+            loading="lazy"
+          >
         </div>
 
         <div class="about-copy reveal">
@@ -742,10 +770,17 @@
         <div class="doctor-grid" id="doctorGrid">
           <article class="doctor-card">
             <div class="doctor-photo">
-              <img src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=900&q=85" alt="Врач стоматолог">
+              <img
+                src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=900&q=85"
+                alt="Врач стоматолог"
+                loading="lazy"
+              >
             </div>
             <div class="doctor-info">
-              <div><h3>Команда FINESSSIM</h3><p>Загружаем специалистов...</p></div>
+              <div>
+                <h3>Команда FINESSSIM</h3>
+                <p>Загружаем специалистов...</p>
+              </div>
               <span class="doctor-number">01</span>
             </div>
           </article>
@@ -766,17 +801,19 @@
         <div class="booking-copy reveal">
           <span class="eyebrow">Let's talk — 05 / 05</span>
           <h2>Время<br>улыбаться.</h2>
-          <p>Оставьте заявку, и мы свяжемся с вами, чтобы подтвердить удобное время визита.</p>
+          <p>Оставьте заявку, и мы свяжемся с вами, чтобы обсудить удобное время визита.</p>
 
           <div class="contact-lines">
             <div>
               <span>Телефон</span>
               <a id="sitePhone" href="tel:+77770553737">+7 (777) 055-37-37</a>
             </div>
+
             <div>
               <span>Адрес</span>
               <strong id="siteAddress">Нижний Новгород, ул. Сорокина, 10</strong>
             </div>
+
             <div>
               <span>График</span>
               <strong id="siteHours">Пн–Пт · 09:00–18:00</strong>
@@ -785,16 +822,32 @@
         </div>
 
         <form class="booking-form reveal" id="bookingForm">
-          <h3>Записаться на консультацию</h3>
+          <h3>Оставить заявку</h3>
 
           <div class="field">
             <label for="name">Ваше имя</label>
-            <input id="name" name="name" type="text" maxlength="120" placeholder="Как к вам обращаться?" required>
+            <input
+              id="name"
+              name="name"
+              type="text"
+              maxlength="120"
+              autocomplete="name"
+              placeholder="Как к вам обращаться?"
+              required
+            >
           </div>
 
           <div class="field">
             <label for="phone">Номер телефона</label>
-            <input id="phone" name="phone" type="tel" maxlength="40" placeholder="+7 (___) ___-__-__" required>
+            <input
+              id="phone"
+              name="phone"
+              type="tel"
+              maxlength="40"
+              autocomplete="tel"
+              placeholder="+7 (___) ___-__-__"
+              required
+            >
           </div>
 
           <div class="field">
@@ -805,25 +858,42 @@
           </div>
 
           <div class="field">
-            <label for="appointment">Желаемые дата и время</label>
-            <input id="appointment" name="appointment" type="datetime-local" required>
-          </div>
-
-          <div class="field">
             <label for="message">Комментарий (необязательно)</label>
-            <textarea id="message" name="message" rows="2" maxlength="2000" placeholder="Ваш вопрос или пожелания"></textarea>
+            <textarea
+              id="message"
+              name="message"
+              rows="2"
+              maxlength="2000"
+              placeholder="Ваш вопрос или пожелания"
+            ></textarea>
           </div>
 
           <div class="honeypot" aria-hidden="true">
             <label for="website">Не заполняйте это поле</label>
-            <input id="website" name="website" tabindex="-1" autocomplete="off">
+            <input
+              id="website"
+              name="website"
+              type="text"
+              tabindex="-1"
+              autocomplete="off"
+            >
           </div>
 
-          <p id="bookingStatus" class="booking-status" role="status" aria-live="polite"></p>
+          <p
+            id="bookingStatus"
+            class="booking-status"
+            role="status"
+            aria-live="polite"
+          ></p>
 
-          <button class="submit" type="submit">Отправить заявку ↗</button>
+          <button class="submit" type="submit">
+            Отправить заявку ↗
+          </button>
 
-          <p class="form-note">После отправки заявки мы свяжемся с вами для подтверждения времени визита.</p>
+          <p class="form-note">
+            Отправляя заявку, вы соглашаетесь на обработку указанных данных
+            для связи с вами. Мы свяжемся с вами для обсуждения времени визита.
+          </p>
         </form>
       </div>
     </section>
@@ -833,6 +903,7 @@
     <div class="container footer-row">
       <a href="#" class="footer-logo">FINESSSIM<span>.</span></a>
       <p>© 2026 FINESSSIM Dental Studio.</p>
+
       <div class="footer-links">
         <a href="#services">Услуги</a>
         <a href="#about">О нас</a>
@@ -842,39 +913,61 @@
   </footer>
 
   <script>
+    'use strict';
+
+    // Мобильное меню
     const menuBtn = document.getElementById('menuBtn');
     const navlinks = document.getElementById('navlinks');
 
     menuBtn.addEventListener('click', () => {
-      navlinks.classList.toggle('open');
+      const isOpen = navlinks.classList.toggle('open');
+      menuBtn.setAttribute('aria-expanded', String(isOpen));
     });
 
     navlinks.querySelectorAll('a').forEach(link => {
-      link.addEventListener('click', () => navlinks.classList.remove('open'));
+      link.addEventListener('click', () => {
+        navlinks.classList.remove('open');
+        menuBtn.setAttribute('aria-expanded', 'false');
+      });
     });
 
-    const observer = new IntersectionObserver(entries => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-          observer.unobserve(entry.target);
-        }
+    // Анимация появления блоков
+    if ('IntersectionObserver' in window) {
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.12 });
+
+      document.querySelectorAll('.reveal').forEach(element => {
+        observer.observe(element);
       });
-    }, {threshold:0.12});
+    } else {
+      document.querySelectorAll('.reveal').forEach(element => {
+        element.classList.add('visible');
+      });
+    }
 
-    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-
+    // Резервные фотографии специалистов
     const fallbackDoctorImages = [
       'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=900&q=85',
       'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=900&q=85'
     ];
 
+    // Проверка адреса изображения
     function safeImageUrl(url, fallback) {
       if (typeof url !== 'string') return fallback;
 
       try {
         const parsed = new URL(url);
-        if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+
+        if (
+          parsed.protocol === 'https:' ||
+          parsed.protocol === 'http:'
+        ) {
           return parsed.href;
         }
       } catch (_) {}
@@ -882,8 +975,11 @@
       return fallback;
     }
 
+    // Отображение настроек студии
     function renderSettings(settings) {
-      const studioName = settings.studio_name || 'FINESSSIM Dental Studio';
+      const studioName =
+        settings.studio_name || 'FINESSSIM Dental Studio';
+
       const phone = settings.phone || '';
       const address = settings.address || '';
       const hours = settings.working_hours || '';
@@ -891,7 +987,9 @@
       document.title = studioName + ' — Dental Studio';
 
       document.querySelectorAll('.logo, .footer-logo').forEach(logo => {
-        logo.textContent = studioName.replace(/\s*Dental Studio\s*/i, '').trim();
+        logo.textContent = studioName
+          .replace(/\s*Dental Studio\s*/i, '')
+          .trim();
 
         const dot = document.createElement('span');
         dot.textContent = '.';
@@ -899,8 +997,10 @@
       });
 
       const topline = document.querySelector('.topline');
+
       if (topline) {
-        topline.textContent = 'A new perspective on your smile · ' + studioName;
+        topline.textContent =
+          'A new perspective on your smile · ' + studioName;
       }
 
       const phoneElement = document.getElementById('sitePhone');
@@ -911,24 +1011,41 @@
       }
 
       const addressElement = document.getElementById('siteAddress');
-      if (addressElement && address) addressElement.textContent = address;
+
+      if (addressElement && address) {
+        addressElement.textContent = address;
+      }
 
       const hoursElement = document.getElementById('siteHours');
-      if (hoursElement && hours) hoursElement.textContent = hours;
+
+      if (hoursElement && hours) {
+        hoursElement.textContent = hours;
+      }
     }
 
+    // Отображение услуг и заполнение формы
     function renderServices(services) {
       const grid = document.getElementById('serviceGrid');
-      if (!grid) return;
+      const select = document.getElementById('service');
+
+      if (!grid || !select) return;
 
       const activeServices = services
         .filter(service => service && service.title)
-        .sort((a,b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
+        .sort((a, b) =>
+          Number(a.sort_order || 0) - Number(b.sort_order || 0)
+        );
 
-      const labels = ['CARE','AESTHETICS','ALIGNMENT','RESTORE'];
+      const labels = [
+        'CARE',
+        'AESTHETICS',
+        'ALIGNMENT',
+        'RESTORE'
+      ];
+
       const fragment = document.createDocumentFragment();
 
-      activeServices.forEach((service,index) => {
+      activeServices.forEach((service, index) => {
         const card = document.createElement('article');
         card.className = 'service-card reveal visible';
 
@@ -936,13 +1053,15 @@
         top.className = 'service-top';
 
         const number = document.createElement('span');
-        number.textContent = String(index + 1).padStart(2,'0') + ' / ' + (labels[index] || 'CARE');
+        number.textContent =
+          String(index + 1).padStart(2, '0') +
+          ' / ' + (labels[index] || 'CARE');
 
         const arrow = document.createElement('span');
         arrow.className = 'service-arrow';
         arrow.textContent = '↗';
 
-        top.append(number,arrow);
+        top.append(number, arrow);
 
         const content = document.createElement('div');
 
@@ -952,7 +1071,7 @@
         const description = document.createElement('p');
         description.textContent = service.description || '';
 
-        content.append(heading,description);
+        content.append(heading, description);
 
         if (service.price) {
           const price = document.createElement('p');
@@ -960,7 +1079,7 @@
           content.appendChild(price);
         }
 
-        card.append(top,content);
+        card.append(top, content);
         fragment.appendChild(card);
       });
 
@@ -970,41 +1089,43 @@
         grid.textContent = 'Услуги скоро появятся.';
       }
 
-      const select = document.getElementById('service');
+      const previousValue = select.value;
+      select.replaceChildren();
 
-      if (select) {
-        const previousValue = select.value;
-        select.replaceChildren();
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = 'Выберите направление';
+      select.appendChild(placeholder);
 
-        const placeholder = document.createElement('option');
-        placeholder.value = '';
-        placeholder.textContent = 'Выберите направление';
-        select.appendChild(placeholder);
+      activeServices.forEach(service => {
+        const option = document.createElement('option');
+        option.value = service.title;
+        option.textContent = service.title;
+        select.appendChild(option);
+      });
 
-        activeServices.forEach(service => {
-          const option = document.createElement('option');
-          option.value = service.title;
-          option.textContent = service.title;
-          select.appendChild(option);
-        });
-
-        if ([...select.options].some(option => option.value === previousValue)) {
-          select.value = previousValue;
-        }
+      if (
+        [...select.options].some(option => option.value === previousValue)
+      ) {
+        select.value = previousValue;
       }
     }
 
+    // Отображение специалистов
     function renderStaff(staff) {
       const grid = document.getElementById('doctorGrid');
+
       if (!grid) return;
 
       const activeStaff = staff
         .filter(person => person && person.name)
-        .sort((a,b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
+        .sort((a, b) =>
+          Number(a.sort_order || 0) - Number(b.sort_order || 0)
+        );
 
       const fragment = document.createDocumentFragment();
 
-      activeStaff.forEach((person,index) => {
+      activeStaff.forEach((person, index) => {
         const card = document.createElement('article');
         card.className = 'doctor-card reveal visible';
 
@@ -1012,10 +1133,12 @@
         photo.className = 'doctor-photo';
 
         const img = document.createElement('img');
+
         img.src = safeImageUrl(
           person.photo_url,
           fallbackDoctorImages[index % fallbackDoctorImages.length]
         );
+
         img.alt = person.name;
         img.loading = 'lazy';
 
@@ -1032,7 +1155,7 @@
         const position = document.createElement('p');
         position.textContent = person.position || '';
 
-        details.append(name,position);
+        details.append(name, position);
 
         if (person.description) {
           const description = document.createElement('p');
@@ -1042,26 +1165,33 @@
 
         const number = document.createElement('span');
         number.className = 'doctor-number';
-        number.textContent = String(index + 1).padStart(2,'0');
+        number.textContent = String(index + 1).padStart(2, '0');
 
-        info.append(details,number);
-        card.append(photo,info);
+        info.append(details, number);
+        card.append(photo, info);
+
         fragment.appendChild(card);
       });
 
       if (activeStaff.length) {
         grid.replaceChildren(fragment);
       } else {
-        grid.textContent = 'Информация о специалистах скоро появится.';
+        grid.textContent =
+          'Информация о специалистах скоро появится.';
       }
     }
 
+    // Получение публичных данных из API
     async function loadSiteData() {
+      const select = document.getElementById('service');
+
       try {
         const response = await fetch('/api/site', {
-          method:'GET',
-          headers:{'Accept':'application/json'},
-          credentials:'same-origin'
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json'
+          },
+          credentials: 'same-origin'
         });
 
         if (!response.ok) {
@@ -1086,27 +1216,16 @@
         console.log('FINESSSIM: данные успешно загружены из D1');
 
       } catch (error) {
-        console.error('Не удалось загрузить данные FINESSSIM:',error);
+        console.error('Ошибка загрузки данных FINESSSIM:', error);
 
-        const select = document.getElementById('service');
         if (select) {
-          select.innerHTML = '<option value="">Не удалось загрузить услуги</option>';
+          select.innerHTML =
+            '<option value="">Не удалось загрузить услуги</option>';
         }
       }
     }
 
-    // Устанавливаем минимальную дату для выбора визита
-    const appointmentInput = document.getElementById('appointment');
-
-    function setAppointmentMin() {
-      const now = new Date();
-      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-      appointmentInput.min = now.toISOString().slice(0,16);
-    }
-
-    setAppointmentMin();
-
-    // Отправка заявки
+    // Отправка заявки в API
     const bookingForm = document.getElementById('bookingForm');
     const bookingStatus = document.getElementById('bookingStatus');
 
@@ -1117,49 +1236,72 @@
 
       const submitButton = bookingForm.querySelector('.submit');
       const originalText = submitButton.textContent;
+
       const formData = new FormData(bookingForm);
 
       const payload = {
-        client_name:String(formData.get('name') || '').trim(),
-        phone:String(formData.get('phone') || '').trim(),
-        service:String(formData.get('service') || '').trim(),
-        appointment_at:String(formData.get('appointment') || ''),
-        message:String(formData.get('message') || '').trim(),
-        website:String(formData.get('website') || '').trim()
+        client_name: String(formData.get('name') || '').trim(),
+        phone: String(formData.get('phone') || '').trim(),
+        service: String(formData.get('service') || '').trim(),
+        message: String(formData.get('message') || '').trim(),
+        website: String(formData.get('website') || '').trim()
       };
+
+      if (
+        !payload.client_name ||
+        !payload.phone ||
+        !payload.service
+      ) {
+        bookingStatus.textContent =
+          'Заполните имя, телефон и выберите услугу.';
+        bookingStatus.style.color = '#c04435';
+        return;
+      }
 
       submitButton.disabled = true;
       submitButton.textContent = 'ОТПРАВКА...';
+
       bookingStatus.textContent = '';
       bookingStatus.style.color = '#183c32';
 
       try {
         const response = await fetch('/api/bookings', {
-          method:'POST',
-          headers:{
-            'Content-Type':'application/json',
-            'Accept':'application/json'
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
           },
-          credentials:'same-origin',
-          body:JSON.stringify(payload)
+          credentials: 'same-origin',
+          body: JSON.stringify(payload)
         });
 
-        const result = await response.json();
+        let result;
+
+        try {
+          result = await response.json();
+        } catch (_) {
+          throw new Error('Сервер вернул некорректный ответ.');
+        }
 
         if (!response.ok) {
-          throw new Error(result.error || 'Не удалось отправить заявку');
+          throw new Error(
+            result.error || 'Не удалось отправить заявку.'
+          );
         }
 
         bookingStatus.textContent =
-          'Спасибо! Заявка отправлена. Мы свяжемся с вами для подтверждения записи.';
+          'Спасибо! Заявка отправлена. Мы свяжемся с вами для уточнения деталей.';
+
         bookingStatus.style.color = '#187548';
 
         bookingForm.reset();
-        setAppointmentMin();
 
       } catch (error) {
+        console.error('Ошибка отправки заявки:', error);
+
         bookingStatus.textContent =
           error.message || 'Ошибка отправки. Попробуйте ещё раз.';
+
         bookingStatus.style.color = '#c04435';
 
       } finally {
@@ -1168,9 +1310,9 @@
       }
     });
 
+    // Запуск загрузки
     loadSiteData();
   </script>
 </body>
 </html>
-
 
