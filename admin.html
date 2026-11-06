@@ -8,9 +8,13 @@
 <title>Управление — FINESSSIM</title>
 <style>
 :root {
-  --bg:#f4f0e7;--paper:#fffdf8;--green:#183b32;
-  --muted:#77796f;--line:rgba(24,59,50,.16);
-  --lime:#d5e66c;--red:#a33b2e;
+  --bg:#f4f0e7;
+  --paper:#fffdf8;
+  --green:#183b32;
+  --muted:#77796f;
+  --line:rgba(24,59,50,.16);
+  --lime:#d5e66c;
+  --red:#a33b2e;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--green);font-family:Arial,sans-serif}
@@ -50,13 +54,14 @@ input:focus,textarea:focus,select:focus{border-color:var(--green)}
 .section h2{font-size:27px;letter-spacing:-1px}
 .card{background:var(--paper);border:1px solid var(--line);padding:24px;margin-bottom:16px}
 .card h3{margin:0 0 14px;font-size:19px}
+.card h4{margin:0 0 12px}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px}
 .full{grid-column:1/-1}
 .actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}
 .checkbox{display:flex;align-items:center;gap:9px;margin-top:18px}
 .checkbox input{width:auto}
 .status{font-size:11px;color:var(--muted);margin-left:8px}
-.note{font-size:12px;color:var(--muted);line-height:1.5}
+.note{font-size:12px;color:var(--muted);line-height:1.6}
 .empty{padding:25px;color:var(--muted);background:var(--paper)}
 .booking-meta{display:flex;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin-bottom:16px}
 .booking-info{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 20px}
@@ -71,9 +76,16 @@ input:focus,textarea:focus,select:focus{border-color:var(--green)}
 .booking-filter select{max-width:240px}
 .booking-count{font-size:12px;color:var(--muted)}
 .appointment-box{margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
-.appointment-box h4{margin:0 0 12px;font-size:15px}
 .appointment-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px}
 .appointment-current{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.6}
+.days-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}
+.day-option{display:flex;align-items:center;gap:8px;padding:11px;background:var(--bg);font-size:12px}
+.day-option input{width:auto;margin:0;accent-color:var(--green)}
+.field-hint{font-size:11px;color:var(--muted);line-height:1.5;margin-top:6px}
+.settings-group{margin-bottom:18px}
+.settings-group:last-child{margin-bottom:0}
+.settings-group h3{margin-bottom:5px}
+.settings-group .group-description{font-size:12px;color:var(--muted);line-height:1.5;margin:0 0 16px}
 @media(max-width:650px){
   .grid,.booking-info,.appointment-grid{grid-template-columns:1fr}
   .full{grid-column:auto}
@@ -83,6 +95,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--green)}
   .booking-controls{grid-template-columns:1fr}
   .booking-controls .btn{width:100%}
   .appointment-box .btn{width:100%}
+  .days-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 </style>
 </head>
@@ -106,37 +119,38 @@ input:focus,textarea:focus,select:focus{border-color:var(--green)}
 
 <main id="app" class="container hidden">
   <h1>Управление студией.</h1>
-  <p class="subtitle">Здесь можно редактировать содержимое сайта и управлять заявками клиентов.</p>
+  <p class="subtitle">Редактируйте сайт, управляйте услугами, командой и записями клиентов.</p>
 
   <div class="tabs">
-    <button class="tab active" data-tab="settings">Настройки</button>
+    <button class="tab active" data-tab="settings">Сайт и настройки</button>
     <button class="tab" data-tab="services">Услуги</button>
     <button class="tab" data-tab="staff">Команда</button>
     <button class="tab" data-tab="bookings">Записи</button>
   </div>
 
   <section id="settings" class="section active">
-    <div class="section-head"><h2>Настройки студии</h2></div>
-    <form id="settingsForm" class="card">
-      <label>Название студии</label>
-      <input name="studio_name" maxlength="300" required>
-      <label>Телефон</label>
-      <input name="phone" maxlength="300">
-      <label>Адрес</label>
-      <input name="address" maxlength="300">
-      <label>График работы</label>
-      <input name="working_hours" maxlength="300">
-      <div class="actions">
-        <button class="btn" type="submit">СОХРАНИТЬ НАСТРОЙКИ</button>
+    <div class="section-head">
+      <h2>Редактирование сайта</h2>
+    </div>
+
+    <p class="note">
+      Здесь можно менять тексты, фотографии, контакты и расписание.
+      После сохранения настройки записываются в базу данных.
+    </p>
+
+    <form id="settingsForm">
+      <div id="settingsFields"></div>
+      <div class="card">
+        <button class="btn" type="submit" id="saveSettingsButton">СОХРАНИТЬ ВСЕ НАСТРОЙКИ</button>
+        <div class="message" id="settingsMessage" role="status"></div>
       </div>
-      <div class="message" id="settingsMessage" role="status"></div>
     </form>
   </section>
 
   <section id="services" class="section">
     <div class="section-head">
       <h2>Услуги</h2>
-      <button class="btn" id="addServiceButton">+ ДОБАВИТЬ УСЛУГУ</button>
+      <button class="btn" id="addServiceButton" type="button">+ ДОБАВИТЬ УСЛУГУ</button>
     </div>
 
     <form id="newService" class="card hidden">
@@ -146,6 +160,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--green)}
         <div><label>Цена</label><input name="price" maxlength="80" placeholder="Например, от 3 000 ₽"></div>
         <div class="full"><label>Описание</label><textarea name="description" maxlength="1000"></textarea></div>
         <div class="full"><label>Ссылка на фотографию (HTTPS)</label><input name="image_url" type="url" maxlength="1000" placeholder="https://..."></div>
+        <div><label>Продолжительность приёма (минуты)</label><input name="duration_minutes" type="number" min="5" max="600" value="60" required></div>
         <div><label>Порядок отображения</label><input name="sort_order" type="number" value="0"></div>
       </div>
       <div class="actions">
@@ -160,7 +175,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--green)}
   <section id="staff" class="section">
     <div class="section-head">
       <h2>Команда</h2>
-      <button class="btn" id="addStaffButton">+ ДОБАВИТЬ СОТРУДНИКА</button>
+      <button class="btn" id="addStaffButton" type="button">+ ДОБАВИТЬ СОТРУДНИКА</button>
     </div>
 
     <form id="newStaff" class="card hidden">
@@ -184,7 +199,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--green)}
   <section id="bookings" class="section">
     <div class="section-head">
       <h2>Записи клиентов</h2>
-      <button class="btn btn-light" id="refreshBookingsButton">ОБНОВИТЬ ↻</button>
+      <button class="btn btn-light" id="refreshBookingsButton" type="button">ОБНОВИТЬ ↻</button>
     </div>
 
     <div class="booking-filter">
@@ -205,7 +220,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--green)}
 
   <div class="actions" style="margin-top:35px">
     <a class="btn btn-light" href="/" style="text-decoration:none">ОТКРЫТЬ САЙТ ↗</a>
-    <button class="btn btn-light" id="logoutButton">ВЫЙТИ</button>
+    <button class="btn btn-light" id="logoutButton" type="button">ВЫЙТИ</button>
   </div>
   <div class="message" id="globalMessage" role="status"></div>
 </main>
@@ -220,12 +235,149 @@ const STATUS_LABELS = {
   cancelled: "Отменена"
 };
 
+const DAYS = [
+  {value:1,label:"Понедельник"},
+  {value:2,label:"Вторник"},
+  {value:3,label:"Среда"},
+  {value:4,label:"Четверг"},
+  {value:5,label:"Пятница"},
+  {value:6,label:"Суббота"},
+  {value:0,label:"Воскресенье"}
+];
+
+// Все настройки соответствуют разрешённым ключам API.
+const SETTINGS_GROUPS = [
+  {
+    title:"Основная информация",
+    description:"Название студии и основные контактные данные.",
+    fields:[
+      ["studio_name","Название студии","text"],
+      ["phone","Телефон","text"],
+      ["address","Адрес","text"],
+      ["telegram","Telegram — ссылка или username","text"],
+      ["whatsapp","WhatsApp — ссылка или номер","text"],
+      ["instagram","Instagram — ссылка","text"],
+      ["vk","ВКонтакте — ссылка","text"],
+      ["map_url","Ссылка на карту","url"]
+    ]
+  },
+  {
+    title:"График работы и запись",
+    description:"Эти параметры влияют на доступные дни и время записи клиентов.",
+    fields:[
+      ["working_hours","Текст графика для отображения на сайте","text"],
+      ["working_start","Начало рабочего дня","time"],
+      ["working_end","Окончание рабочего дня","time"],
+      ["slot_interval","Интервал между записями (минуты)","number"]
+    ],
+    days:true
+  },
+  {
+    title:"Главный экран",
+    description:"Первый экран сайта — заголовок, описание и фотография.",
+    fields:[
+      ["hero_eyebrow","Небольшая надпись над заголовком","text"],
+      ["hero_title","Главный заголовок","textarea"],
+      ["hero_subtitle","Описание под заголовком","textarea"],
+      ["hero_image","Ссылка на главное изображение (HTTPS)","url"]
+    ]
+  },
+  {
+    title:"Вступительный блок",
+    description:"Раздел с философией и первым знакомством со студией.",
+    fields:[
+      ["intro_eyebrow","Небольшая надпись","text"],
+      ["intro_title","Заголовок","textarea"],
+      ["intro_text","Основной текст","textarea"],
+      ["intro_button","Текст кнопки","text"]
+    ]
+  },
+  {
+    title:"Раздел услуг",
+    description:"Заголовок и описание блока с услугами.",
+    fields:[
+      ["services_eyebrow","Небольшая надпись","text"],
+      ["services_title","Заголовок раздела","textarea"],
+      ["services_text","Описание раздела","textarea"]
+    ]
+  },
+  {
+    title:"О студии",
+    description:"Информация о студии и фотография этого раздела.",
+    fields:[
+      ["about_eyebrow","Небольшая надпись","text"],
+      ["about_title","Заголовок","textarea"],
+      ["about_text","Описание студии","textarea"],
+      ["about_image","Ссылка на фотографию (HTTPS)","url"]
+    ]
+  },
+  {
+    title:"Преимущества студии",
+    description:"Четыре пункта, которые отображаются в разделе «О студии».",
+    fields:[
+      ["about_point_1_title","Пункт 1 — заголовок","text"],
+      ["about_point_1_text","Пункт 1 — описание","textarea"],
+      ["about_point_2_title","Пункт 2 — заголовок","text"],
+      ["about_point_2_text","Пункт 2 — описание","textarea"],
+      ["about_point_3_title","Пункт 3 — заголовок","text"],
+      ["about_point_3_text","Пункт 3 — описание","textarea"],
+      ["about_point_4_title","Пункт 4 — заголовок","text"],
+      ["about_point_4_text","Пункт 4 — описание","textarea"]
+    ]
+  },
+  {
+    title:"Раздел команды",
+    description:"Заголовок и описание блока специалистов.",
+    fields:[
+      ["staff_eyebrow","Небольшая надпись","text"],
+      ["staff_title","Заголовок раздела","textarea"],
+      ["staff_text","Описание раздела","textarea"]
+    ]
+  },
+  {
+    title:"Манифест",
+    description:"Отдельный текстовый блок на главной странице.",
+    fields:[
+      ["manifesto_title","Заголовок","textarea"],
+      ["manifesto_text","Текст","textarea"]
+    ]
+  },
+  {
+    title:"Запись на приём",
+    description:"Тексты блока, в котором посетитель оставляет заявку.",
+    fields:[
+      ["booking_eyebrow","Небольшая надпись","text"],
+      ["booking_title","Заголовок","textarea"],
+      ["booking_text","Описание","textarea"]
+    ]
+  },
+  {
+    title:"Подвал сайта",
+    description:"Информация в нижней части сайта.",
+    fields:[
+      ["footer_text","Описание в подвале","textarea"]
+    ]
+  },
+  {
+    title:"Поисковая оптимизация",
+    description:"Название и описание сайта для поисковых систем.",
+    fields:[
+      ["seo_title","SEO — название страницы","text"],
+      ["seo_description","SEO — описание страницы","textarea"]
+    ]
+  }
+];
+
 let allBookings = [];
 let allStaff = [];
 
 function escapeHTML(value) {
   return String(value ?? "").replace(/[&<>"']/g, char => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    "&":"&amp;",
+    "<":"&lt;",
+    ">":"&gt;",
+    '"':"&quot;",
+    "'":"&#39;"
   })[char]);
 }
 
@@ -237,9 +389,9 @@ function message(element, text, type = "") {
 async function api(path, method = "GET", body = undefined) {
   const options = {
     method,
-    credentials: "same-origin",
-    cache: "no-store",
-    headers: {}
+    credentials:"same-origin",
+    cache:"no-store",
+    headers:{}
   };
 
   if (body !== undefined) {
@@ -255,7 +407,10 @@ async function api(path, method = "GET", body = undefined) {
     throw new Error("Сессия завершена. Войдите снова.");
   }
 
-  if (!response.ok) throw new Error(data.error || "Ошибка сервера");
+  if (!response.ok) {
+    throw new Error(data.error || "Ошибка сервера");
+  }
+
   return data;
 }
 
@@ -269,18 +424,178 @@ function showApp() {
   $("#app").classList.remove("hidden");
 }
 
-async function loadAll() {
-  await Promise.all([loadSettings(),loadServices(),loadStaff(),loadBookings()]);
+// --------------------------------
+// НАСТРОЙКИ САЙТА
+// --------------------------------
+
+function renderSettingsForm(settings = {}) {
+  const container = $("#settingsFields");
+
+  container.innerHTML = SETTINGS_GROUPS.map((group, index) => {
+    const fieldsHTML = group.fields.map(([key,label,type]) => {
+      const value = settings[key] ?? "";
+
+      let field;
+
+      if (type === "textarea") {
+        field = `
+          <textarea
+            name="${key}"
+            data-setting="${key}"
+            maxlength="5000"
+            rows="3"
+          >${escapeHTML(value)}</textarea>`;
+      } else {
+        const inputType = ["url","time","number"].includes(type)
+          ? type
+          : "text";
+
+        const extra = type === "number"
+          ? 'min="5" max="60" step="1"'
+          : "";
+
+        field = `
+          <input
+            type="${inputType}"
+            name="${key}"
+            data-setting="${key}"
+            maxlength="5000"
+            ${extra}
+            value="${escapeHTML(value)}"
+          >`;
+      }
+
+      return `
+        <div>
+          <label for="setting-${key}">${escapeHTML(label)}</label>
+          ${field.replace(`name="${key}"`, `id="setting-${key}" name="${key}"`)}
+        </div>`;
+    }).join("");
+
+    let daysHTML = "";
+
+    if (group.days) {
+      const currentDays = String(
+        settings.working_days ?? "1,2,3,4,5"
+      ).split(",").map(Number);
+
+      daysHTML = `
+        <div class="full">
+          <label>Рабочие дни</label>
+          <div class="days-grid">
+            ${DAYS.map(day => `
+              <label class="day-option">
+                <input
+                  type="checkbox"
+                  data-working-day="${day.value}"
+                  ${currentDays.includes(day.value) ? "checked" : ""}
+                >
+                ${day.label}
+              </label>
+            `).join("")}
+          </div>
+          <p class="field-hint">
+            Выбранные дни будут доступны для записи.
+            Если снять все галочки, расписание не сохранится.
+          </p>
+        </div>`;
+    }
+
+    return `
+      <div class="card settings-group">
+        <h3>${escapeHTML(group.title)}</h3>
+        <p class="group-description">${escapeHTML(group.description)}</p>
+        <div class="grid">
+          ${fieldsHTML}
+          ${daysHTML}
+        </div>
+      </div>`;
+  }).join("");
 }
+
+async function loadSettings() {
+  try {
+    const settings = await api("/admin/settings");
+    renderSettingsForm(settings);
+  } catch (error) {
+    message($("#settingsMessage"), error.message, "error");
+  }
+}
+
+$("#settingsForm").addEventListener("submit", async event => {
+  event.preventDefault();
+
+  const form = event.currentTarget;
+  const button = $("#saveSettingsButton");
+  const body = {};
+
+  form.querySelectorAll("[data-setting]").forEach(field => {
+    body[field.dataset.setting] = field.value.trim();
+  });
+
+  const selectedDays = [...form.querySelectorAll("[data-working-day]:checked")]
+    .map(field => Number(field.dataset.workingDay));
+
+  if (!selectedDays.length) {
+    message($("#settingsMessage"), "Выбери хотя бы один рабочий день.", "error");
+    return;
+  }
+
+  body.working_days = selectedDays.join(",");
+
+  // Проверяем URL фотографий и карты.
+  const urlKeys = ["hero_image","about_image","map_url"];
+
+  for (const key of urlKeys) {
+    const value = body[key];
+
+    if (!value) continue;
+
+    try {
+      const parsed = new URL(value);
+
+      if (parsed.protocol !== "https:") {
+        throw new Error();
+      }
+    } catch {
+      message(
+        $("#settingsMessage"),
+        `Поле ${key}: укажи корректную HTTPS-ссылку.`,
+        "error"
+      );
+      return;
+    }
+  }
+
+  button.disabled = true;
+  message($("#settingsMessage"), "Сохраняем настройки...");
+
+  try {
+    await api("/admin/settings", "PUT", body);
+    message($("#settingsMessage"), "Все настройки успешно сохранены.", "success");
+  } catch (error) {
+    message($("#settingsMessage"), error.message, "error");
+  } finally {
+    button.disabled = false;
+  }
+});
+
+// --------------------------------
+// АВТОРИЗАЦИЯ
+// --------------------------------
 
 $("#loginForm").addEventListener("submit", async event => {
   event.preventDefault();
+
   const button = $("#loginButton");
   button.disabled = true;
   message($("#loginMessage"), "Проверяем пароль...");
 
   try {
-    await api("/login", "POST", {password:$("#password").value});
+    await api("/login", "POST", {
+      password:$("#password").value
+    });
+
     $("#password").value = "";
     showApp();
     await loadAll();
@@ -294,6 +609,7 @@ $("#loginForm").addEventListener("submit", async event => {
 async function checkSession() {
   try {
     const data = await api("/me");
+
     if (data.authenticated) {
       showApp();
       await loadAll();
@@ -313,10 +629,29 @@ $("#logoutButton").addEventListener("click", async () => {
   }
 });
 
+// --------------------------------
+// ЗАГРУЗКА РАЗДЕЛОВ
+// --------------------------------
+
+async function loadAll() {
+  await Promise.all([
+    loadSettings(),
+    loadServices(),
+    loadStaff(),
+    loadBookings()
+  ]);
+}
+
 document.querySelectorAll(".tab").forEach(button => {
   button.addEventListener("click", () => {
-    document.querySelectorAll(".tab").forEach(tab => tab.classList.remove("active"));
-    document.querySelectorAll(".section").forEach(section => section.classList.remove("active"));
+    document.querySelectorAll(".tab").forEach(tab =>
+      tab.classList.remove("active")
+    );
+
+    document.querySelectorAll(".section").forEach(section =>
+      section.classList.remove("active")
+    );
+
     button.classList.add("active");
     $("#" + button.dataset.tab).classList.add("active");
 
@@ -324,65 +659,93 @@ document.querySelectorAll(".tab").forEach(button => {
   });
 });
 
-async function loadSettings() {
-  try {
-    const settings = await api("/admin/settings");
-    const form = $("#settingsForm");
-    for (const key of ["studio_name","phone","address","working_hours"]) {
-      form.elements[key].value = settings[key] || "";
-    }
-  } catch (error) {
-    message($("#settingsMessage"), error.message, "error");
-  }
-}
-
-$("#settingsForm").addEventListener("submit", async event => {
-  event.preventDefault();
-  const body = Object.fromEntries(new FormData(event.currentTarget).entries());
-  try {
-    await api("/admin/settings", "PUT", body);
-    message($("#settingsMessage"), "Настройки сохранены.", "success");
-  } catch (error) {
-    message($("#settingsMessage"), error.message, "error");
-  }
-});
+// --------------------------------
+// УСЛУГИ
+// --------------------------------
 
 function serviceCard(item) {
   const id = Number(item.id);
+  const active = item.active === 1 || item.active === true;
+
   return `
-  <form class="card edit-service" data-id="${id}">
-    <h3>${escapeHTML(item.title)} <span class="status">${item.active ? "АКТИВНА" : "СКРЫТА"}</span></h3>
-    <div class="grid">
-      <div><label>Название</label><input name="title" required maxlength="120" value="${escapeHTML(item.title)}"></div>
-      <div><label>Цена</label><input name="price" maxlength="80" value="${escapeHTML(item.price)}"></div>
-      <div class="full"><label>Описание</label><textarea name="description" maxlength="1000">${escapeHTML(item.description)}</textarea></div>
-      <div class="full"><label>Ссылка на фотографию (HTTPS)</label><input name="image_url" type="url" maxlength="1000" value="${escapeHTML(item.image_url)}"></div>
-      <div><label>Порядок</label><input name="sort_order" type="number" value="${Number(item.sort_order)||0}"></div>
-    </div>
-    <label class="checkbox"><input type="checkbox" name="active" ${item.active ? "checked" : ""}>Показывать на сайте</label>
-    <div class="actions"><button class="btn" type="submit">СОХРАНИТЬ</button></div>
-    <div class="message"></div>
-  </form>`;
+    <form class="card edit-service" data-id="${id}">
+      <h3>
+        ${escapeHTML(item.title)}
+        <span class="status">${active ? "АКТИВНА" : "СКРЫТА"}</span>
+      </h3>
+
+      <div class="grid">
+        <div>
+          <label>Название</label>
+          <input name="title" required maxlength="120" value="${escapeHTML(item.title)}">
+        </div>
+
+        <div>
+          <label>Цена</label>
+          <input name="price" maxlength="80" value="${escapeHTML(item.price)}">
+        </div>
+
+        <div class="full">
+          <label>Описание</label>
+          <textarea name="description" maxlength="1000">${escapeHTML(item.description)}</textarea>
+        </div>
+
+        <div class="full">
+          <label>Ссылка на фотографию (HTTPS)</label>
+          <input name="image_url" type="url" maxlength="1000" value="${escapeHTML(item.image_url)}">
+        </div>
+
+        <div>
+          <label>Продолжительность (минуты)</label>
+          <input name="duration_minutes" type="number" min="5" max="600" value="${Number(item.duration_minutes) || 60}">
+        </div>
+
+        <div>
+          <label>Порядок</label>
+          <input name="sort_order" type="number" value="${Number(item.sort_order) || 0}">
+        </div>
+      </div>
+
+      <label class="checkbox">
+        <input type="checkbox" name="active" ${active ? "checked" : ""}>
+        Показывать на сайте
+      </label>
+
+      <div class="actions">
+        <button class="btn" type="submit">СОХРАНИТЬ</button>
+      </div>
+      <div class="message"></div>
+    </form>`;
 }
 
 async function loadServices() {
   try {
     const items = await api("/admin/services");
-    $("#servicesList").innerHTML = items.length ? items.map(serviceCard).join("") : '<div class="empty">Услуг пока нет.</div>';
+
+    $("#servicesList").innerHTML = items.length
+      ? items.map(serviceCard).join("")
+      : '<div class="empty">Услуг пока нет.</div>';
   } catch (error) {
     $("#servicesList").textContent = error.message;
   }
 }
 
-$("#addServiceButton").addEventListener("click", () => $("#newService").classList.toggle("hidden"));
+$("#addServiceButton").addEventListener("click", () => {
+  $("#newService").classList.toggle("hidden");
+});
 
 $("#newService").addEventListener("submit", async event => {
   event.preventDefault();
+
   const form = event.currentTarget;
   const body = Object.fromEntries(new FormData(form).entries());
+
   body.sort_order = Number(body.sort_order || 0);
+  body.duration_minutes = Number(body.duration_minutes || 60);
+
   try {
     await api("/admin/services", "POST", body);
+
     form.reset();
     form.classList.add("hidden");
     message($("#newServiceMessage"), "");
@@ -394,57 +757,108 @@ $("#newService").addEventListener("submit", async event => {
 
 $("#servicesList").addEventListener("submit", async event => {
   if (!event.target.matches(".edit-service")) return;
+
   event.preventDefault();
+
   const form = event.target;
   const body = Object.fromEntries(new FormData(form).entries());
+
   body.sort_order = Number(body.sort_order || 0);
+  body.duration_minutes = Number(body.duration_minutes || 60);
   body.active = form.elements.active.checked;
+
   try {
     await api("/admin/services/" + form.dataset.id, "PUT", body);
-    message(form.querySelector(".message"), "Изменения сохранены.", "success");
     await loadServices();
+    message($("#globalMessage"), "Услуга сохранена.", "success");
   } catch (error) {
     message(form.querySelector(".message"), error.message, "error");
   }
 });
 
+// --------------------------------
+// КОМАНДА
+// --------------------------------
+
 function staffCard(item) {
+  const active = item.active === 1 || item.active === true;
+
   return `
-  <form class="card edit-staff" data-id="${Number(item.id)}">
-    <h3>${escapeHTML(item.name)} <span class="status">${item.active ? "АКТИВЕН" : "СКРЫТ"}</span></h3>
-    <div class="grid">
-      <div><label>Имя</label><input name="name" required maxlength="120" value="${escapeHTML(item.name)}"></div>
-      <div><label>Должность</label><input name="position" maxlength="120" value="${escapeHTML(item.position)}"></div>
-      <div class="full"><label>Описание</label><textarea name="description" maxlength="1000">${escapeHTML(item.description)}</textarea></div>
-      <div class="full"><label>Ссылка на фотографию (HTTPS)</label><input name="photo_url" type="url" maxlength="1000" value="${escapeHTML(item.photo_url)}"></div>
-      <div><label>Порядок</label><input name="sort_order" type="number" value="${Number(item.sort_order)||0}"></div>
-    </div>
-    <label class="checkbox"><input type="checkbox" name="active" ${item.active ? "checked" : ""}>Показывать на сайте</label>
-    <div class="actions"><button class="btn" type="submit">СОХРАНИТЬ</button></div>
-    <div class="message"></div>
-  </form>`;
+    <form class="card edit-staff" data-id="${Number(item.id)}">
+      <h3>
+        ${escapeHTML(item.name)}
+        <span class="status">${active ? "АКТИВЕН" : "СКРЫТ"}</span>
+      </h3>
+
+      <div class="grid">
+        <div>
+          <label>Имя</label>
+          <input name="name" required maxlength="120" value="${escapeHTML(item.name)}">
+        </div>
+
+        <div>
+          <label>Должность</label>
+          <input name="position" maxlength="120" value="${escapeHTML(item.position)}">
+        </div>
+
+        <div class="full">
+          <label>Описание</label>
+          <textarea name="description" maxlength="1000">${escapeHTML(item.description)}</textarea>
+        </div>
+
+        <div class="full">
+          <label>Ссылка на фотографию (HTTPS)</label>
+          <input name="photo_url" type="url" maxlength="1000" value="${escapeHTML(item.photo_url)}">
+        </div>
+
+        <div>
+          <label>Порядок</label>
+          <input name="sort_order" type="number" value="${Number(item.sort_order) || 0}">
+        </div>
+      </div>
+
+      <label class="checkbox">
+        <input type="checkbox" name="active" ${active ? "checked" : ""}>
+        Показывать на сайте
+      </label>
+
+      <div class="actions">
+        <button class="btn" type="submit">СОХРАНИТЬ</button>
+      </div>
+      <div class="message"></div>
+    </form>`;
 }
 
 async function loadStaff() {
   try {
     const items = await api("/admin/staff");
+
     allStaff = Array.isArray(items) ? items : [];
-    $("#staffList").innerHTML = allStaff.length ? allStaff.map(staffCard).join("") : '<div class="empty">Сотрудников пока нет.</div>';
+
+    $("#staffList").innerHTML = allStaff.length
+      ? allStaff.map(staffCard).join("")
+      : '<div class="empty">Сотрудников пока нет.</div>';
   } catch (error) {
     $("#staffList").textContent = error.message;
     allStaff = [];
   }
 }
 
-$("#addStaffButton").addEventListener("click", () => $("#newStaff").classList.toggle("hidden"));
+$("#addStaffButton").addEventListener("click", () => {
+  $("#newStaff").classList.toggle("hidden");
+});
 
 $("#newStaff").addEventListener("submit", async event => {
   event.preventDefault();
+
   const form = event.currentTarget;
   const body = Object.fromEntries(new FormData(form).entries());
+
   body.sort_order = Number(body.sort_order || 0);
+
   try {
     await api("/admin/staff", "POST", body);
+
     form.reset();
     form.classList.add("hidden");
     message($("#newStaffMessage"), "");
@@ -456,45 +870,69 @@ $("#newStaff").addEventListener("submit", async event => {
 
 $("#staffList").addEventListener("submit", async event => {
   if (!event.target.matches(".edit-staff")) return;
+
   event.preventDefault();
+
   const form = event.target;
   const body = Object.fromEntries(new FormData(form).entries());
+
   body.sort_order = Number(body.sort_order || 0);
   body.active = form.elements.active.checked;
+
   try {
     await api("/admin/staff/" + form.dataset.id, "PUT", body);
-    message(form.querySelector(".message"), "Изменения сохранены.", "success");
     await loadStaff();
+    message($("#globalMessage"), "Данные сотрудника сохранены.", "success");
   } catch (error) {
     message(form.querySelector(".message"), error.message, "error");
   }
 });
 
+// --------------------------------
 // ЗАПИСИ КЛИЕНТОВ
+// --------------------------------
 
 function formatDate(value) {
   if (!value) return "Не назначено";
+
   const date = new Date(value);
+
   if (Number.isNaN(date.getTime())) return String(value);
+
   return new Intl.DateTimeFormat("ru-RU", {
-    dateStyle:"medium",timeStyle:"short"
+    dateStyle:"medium",
+    timeStyle:"short"
   }).format(date);
 }
 
-// Преобразует сохранённую дату в формат поля datetime-local.
 function toDateTimeLocal(value) {
   if (!value) return "";
+
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value).slice(0,16);
-  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value).slice(0,16);
+  }
+
+  const localDate = new Date(
+    date.getTime() - date.getTimezoneOffset() * 60000
+  );
+
   return localDate.toISOString().slice(0,16);
 }
 
 function staffOptions(selectedId) {
-  const activeStaff = allStaff.filter(person => Number(person.active) === 1 || person.active === true);
+  const activeStaff = allStaff.filter(person =>
+    Number(person.active) === 1 || person.active === true
+  );
+
   const options = activeStaff.map(person => `
-    <option value="${Number(person.id)}" ${String(person.id) === String(selectedId ?? "") ? "selected" : ""}>
-      ${escapeHTML(person.name)}${person.position ? " — " + escapeHTML(person.position) : ""}
+    <option
+      value="${Number(person.id)}"
+      ${String(person.id) === String(selectedId ?? "") ? "selected" : ""}
+    >
+      ${escapeHTML(person.name)}
+      ${person.position ? " — " + escapeHTML(person.position) : ""}
     </option>
   `).join("");
 
@@ -504,66 +942,105 @@ function staffOptions(selectedId) {
 function bookingCard(item) {
   const id = Number(item.id);
   const status = STATUS_LABELS[item.status] ? item.status : "new";
-  const doctor = allStaff.find(person => String(person.id) === String(item.staff_id));
+
+  const doctor = allStaff.find(person =>
+    String(person.id) === String(item.staff_id)
+  );
 
   return `
-  <article class="card booking-card" data-id="${id}">
-    <div class="booking-meta">
-      <span>ЗАПИСЬ №${id}</span>
-      <span>Заявка: ${escapeHTML(formatDate(item.created_at))}</span>
-    </div>
+    <article class="card booking-card" data-id="${id}">
+      <div class="booking-meta">
+        <span>ЗАПИСЬ №${id}</span>
+        <span>Заявка: ${escapeHTML(formatDate(item.created_at))}</span>
+      </div>
 
-    <div class="booking-info">
-      <div><strong>КЛИЕНТ</strong><span>${escapeHTML(item.client_name || "Не указано")}</span></div>
-      <div><strong>ТЕЛЕФОН</strong><span>${escapeHTML(item.phone || "Не указан")}</span></div>
-      <div><strong>УСЛУГА</strong><span>${escapeHTML(item.service || "Не указана")}</span></div>
-      <div><strong>КОММЕНТАРИЙ</strong><span class="booking-message">${escapeHTML(item.message || "Нет комментария")}</span></div>
-    </div>
-
-    <div class="booking-controls">
-      <label>
-        <span class="note">Статус записи</span>
-        <select class="booking-status">
-          ${Object.entries(STATUS_LABELS).map(([key,label]) =>
-            `<option value="${key}" ${status === key ? "selected" : ""}>${label}</option>`
-          ).join("")}
-        </select>
-      </label>
-      <button class="btn save-booking-status" type="button">СОХРАНИТЬ СТАТУС</button>
-    </div>
-
-    <div class="appointment-box">
-      <h4>Назначение приёма</h4>
-      <div class="appointment-grid">
+      <div class="booking-info">
         <div>
-          <label>Дата и время приёма</label>
-          <input class="booking-appointment" type="datetime-local" value="${escapeHTML(toDateTimeLocal(item.appointment_at))}">
+          <strong>КЛИЕНТ</strong>
+          <span>${escapeHTML(item.client_name || "Не указано")}</span>
         </div>
+
         <div>
-          <label>Врач</label>
-          <select class="booking-staff">${staffOptions(item.staff_id)}</select>
+          <strong>ТЕЛЕФОН</strong>
+          <span>${escapeHTML(item.phone || "Не указан")}</span>
+        </div>
+
+        <div>
+          <strong>УСЛУГА</strong>
+          <span>${escapeHTML(item.service || "Не указана")}</span>
+        </div>
+
+        <div>
+          <strong>КОММЕНТАРИЙ</strong>
+          <span class="booking-message">${escapeHTML(item.message || "Нет комментария")}</span>
         </div>
       </div>
 
-      <div class="appointment-current">
-        Сейчас назначено: ${escapeHTML(item.appointment_at ? formatDate(item.appointment_at) : "дата не выбрана")}
-        · ${escapeHTML(doctor ? doctor.name : "врач не назначен")}
+      <div class="booking-controls">
+        <label>
+          <span class="note">Статус записи</span>
+          <select class="booking-status">
+            ${Object.entries(STATUS_LABELS).map(([key,label]) => `
+              <option value="${key}" ${status === key ? "selected" : ""}>
+                ${label}
+              </option>
+            `).join("")}
+          </select>
+        </label>
+
+        <button class="btn save-booking-status" type="button">
+          СОХРАНИТЬ СТАТУС
+        </button>
       </div>
 
-      <div class="actions">
-        <button class="btn save-booking-appointment" type="button">СОХРАНИТЬ НАЗНАЧЕНИЕ</button>
-      </div>
-    </div>
+      <div class="appointment-box">
+        <h4>Назначение приёма</h4>
 
-    <div class="message booking-card-message" role="status"></div>
-  </article>`;
+        <div class="appointment-grid">
+          <div>
+            <label>Дата и время приёма</label>
+            <input
+              class="booking-appointment"
+              type="datetime-local"
+              value="${escapeHTML(toDateTimeLocal(item.appointment_at))}"
+            >
+          </div>
+
+          <div>
+            <label>Врач</label>
+            <select class="booking-staff">
+              ${staffOptions(item.staff_id)}
+            </select>
+          </div>
+        </div>
+
+        <div class="appointment-current">
+          Сейчас назначено:
+          ${escapeHTML(item.appointment_at ? formatDate(item.appointment_at) : "дата не выбрана")}
+          · ${escapeHTML(doctor ? doctor.name : "врач не назначен")}
+        </div>
+
+        <div class="actions">
+          <button class="btn save-booking-appointment" type="button">
+            СОХРАНИТЬ НАЗНАЧЕНИЕ
+          </button>
+        </div>
+      </div>
+
+      <div class="message booking-card-message" role="status"></div>
+    </article>`;
 }
 
 function renderBookings() {
   const filter = $("#bookingFilter").value;
-  const filtered = filter === "all" ? allBookings : allBookings.filter(item => item.status === filter);
 
-  $("#bookingCount").textContent = `Всего: ${allBookings.length} · Показано: ${filtered.length}`;
+  const filtered = filter === "all"
+    ? allBookings
+    : allBookings.filter(item => item.status === filter);
+
+  $("#bookingCount").textContent =
+    `Всего: ${allBookings.length} · Показано: ${filtered.length}`;
+
   $("#bookingsList").innerHTML = filtered.length
     ? filtered.map(bookingCard).join("")
     : '<div class="empty">Записей с таким статусом пока нет.</div>';
@@ -572,12 +1049,17 @@ function renderBookings() {
 async function loadBookings() {
   const list = $("#bookingsList");
   const button = $("#refreshBookingsButton");
+
   button.disabled = true;
   list.innerHTML = '<div class="empty">Загружаем записи...</div>';
 
   try {
     const data = await api("/admin/bookings");
-    if (!Array.isArray(data)) throw new Error("Сервер вернул некорректный список записей.");
+
+    if (!Array.isArray(data)) {
+      throw new Error("Сервер вернул некорректный список записей.");
+    }
+
     allBookings = data;
     renderBookings();
     message($("#bookingsMessage"), "");
@@ -595,6 +1077,7 @@ $("#bookingFilter").addEventListener("change", renderBookings);
 $("#bookingsList").addEventListener("click", async event => {
   const statusButton = event.target.closest(".save-booking-status");
   const appointmentButton = event.target.closest(".save-booking-appointment");
+
   if (!statusButton && !appointmentButton) return;
 
   const button = statusButton || appointmentButton;
@@ -608,9 +1091,13 @@ $("#bookingsList").addEventListener("click", async event => {
   try {
     if (statusButton) {
       const status = card.querySelector(".booking-status").value;
+
       await api("/admin/bookings/" + id, "PUT", {status});
 
-      const booking = allBookings.find(item => String(item.id) === String(id));
+      const booking = allBookings.find(item =>
+        String(item.id) === String(id)
+      );
+
       if (booking) booking.status = status;
 
       renderBookings();
@@ -629,11 +1116,14 @@ $("#bookingsList").addEventListener("click", async event => {
       }
 
       await api("/admin/bookings/" + id, "PUT", {
-        appointment_at: appointmentAt,
-        staff_id: staffId
+        appointment_at:appointmentAt,
+        staff_id:staffId
       });
 
-      const booking = allBookings.find(item => String(item.id) === String(id));
+      const booking = allBookings.find(item =>
+        String(item.id) === String(id)
+      );
+
       if (booking) {
         booking.appointment_at = appointmentAt;
         booking.staff_id = staffId;
@@ -648,13 +1138,19 @@ $("#bookingsList").addEventListener("click", async event => {
   }
 });
 
+// --------------------------------
+// ОТМЕНА ФОРМ
+// --------------------------------
+
 document.querySelectorAll("[data-cancel]").forEach(button => {
   button.addEventListener("click", () => {
     $("#" + button.dataset.cancel).classList.add("hidden");
   });
 });
 
+// Запускаем проверку авторизации.
 checkSession();
 </script>
 </body>
 </html>
+
