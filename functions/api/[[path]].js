@@ -191,6 +191,7 @@ async function handleRequest(request, env) {
   const method = request.method;
   const db = env.DB;
 
+  // Вход владельца
   if (route === "/api/login" && method === "POST") {
     if (!validOrigin(request)) return json({ error: "Запрос отклонён" }, 403);
 
@@ -216,7 +217,9 @@ async function handleRequest(request, env) {
       { "Set-Cookie": sessionCookie(token) }
     );
   }
-    if (route === "/api/logout" && method === "POST") {
+
+  // Выход владельца
+  if (route === "/api/logout" && method === "POST") {
     if (!validOrigin(request)) return json({ error: "Запрос отклонён" }, 403);
     return json(
       { success: true },
@@ -225,11 +228,13 @@ async function handleRequest(request, env) {
     );
   }
 
+  // Проверка авторизации
   if (route === "/api/me" && method === "GET") {
     const authenticated = await requireOwner(request, env);
     return json({ authenticated });
   }
 
+  // Публичные данные сайта
   if (route === "/api/site" && method === "GET") {
     return json(await getPublicData(db));
   }
@@ -238,6 +243,7 @@ async function handleRequest(request, env) {
     return json({ error: "Маршрут не найден" }, 404);
   }
 
+  // Защита административных маршрутов
   const authenticated = await requireOwner(request, env);
   if (!authenticated) return json({ error: "Необходим вход" }, 401);
 
@@ -481,33 +487,34 @@ async function handleRequest(request, env) {
       return json({ success: true, changes: result.meta.changes });
     }
   }
-    // ЗАПИСИ КЛИЕНТОВ
+
+  // Записи клиентов
   if (route === "/api/admin/bookings") {
     if (method === "GET") {
       const result = await db.prepare(
         `SELECT
-           b.id,
-           b.client_name,
-           b.phone,
-           b.service,
-           b.message,
-           b.status,
-           b.created_at,
-           b.appointment_at,
-           b.staff_id,
-           b.service_id,
-           b.notes,
-           b.updated_at,
-           s.title AS service_title,
-           st.name AS staff_name
-         FROM bookings b
-         LEFT JOIN services s ON s.id = b.service_id
-         LEFT JOIN staff st ON st.id = b.staff_id
-         ORDER BY
-           CASE WHEN b.appointment_at IS NULL OR b.appointment_at = '' THEN 1 ELSE 0 END,
-           b.appointment_at ASC,
-           b.created_at DESC,
-           b.id DESC`
+          b.id,
+          b.client_name,
+          b.phone,
+          b.service,
+          b.message,
+          b.status,
+          b.created_at,
+          b.appointment_at,
+          b.staff_id,
+          b.service_id,
+          b.notes,
+          b.updated_at,
+          s.title AS service_title,
+          st.name AS staff_name
+        FROM bookings b
+        LEFT JOIN services s ON s.id = b.service_id
+        LEFT JOIN staff st ON st.id = b.staff_id
+        ORDER BY
+          CASE WHEN b.appointment_at IS NULL OR b.appointment_at = '' THEN 1 ELSE 0 END,
+          b.appointment_at ASC,
+          b.created_at DESC,
+          b.id DESC`
       ).all();
 
       return json(result.results || []);
@@ -608,7 +615,8 @@ async function handleRequest(request, env) {
       return json({ success: true, id: result.meta.last_row_id }, 201);
     }
   }
-    // Изменение статуса и данных отдельной записи
+
+  // Изменение статуса и данных отдельной записи
   const bookingMatch = route.match(/^\/api\/admin\/bookings\/(\d+)$/);
   if (bookingMatch && (method === "PUT" || method === "DELETE")) {
     const id = Number(bookingMatch[1]);
