@@ -1,3 +1,4 @@
+
 const json = (data, status = 200, extraHeaders = {}) =>
   new Response(JSON.stringify(data), {
     status,
@@ -9,7 +10,6 @@ const json = (data, status = 200, extraHeaders = {}) =>
   });
 
 const encoder = new TextEncoder();
-
 const COOKIE_NAME = "finesssim_session";
 const SESSION_SECONDS = 60 * 60 * 24 * 7;
 
@@ -20,16 +20,42 @@ const BOOKING_STATUSES = [
   "cancelled"
 ];
 
-// ------------------------------
+const SETTING_KEYS = [
+  "studio_name", "phone", "address",
+  "telegram", "whatsapp", "instagram", "vk", "map_url",
+  "working_hours", "working_days",
+  "working_start", "working_end", "slot_interval",
+
+  "hero_eyebrow", "hero_title", "hero_subtitle", "hero_image",
+  "intro_eyebrow", "intro_title", "intro_text", "intro_button",
+  "services_eyebrow", "services_title", "services_text",
+  "about_eyebrow", "about_title", "about_text", "about_image",
+
+  "about_point_1_title", "about_point_1_text",
+  "about_point_2_title", "about_point_2_text",
+  "about_point_3_title", "about_point_3_text",
+  "about_point_4_title", "about_point_4_text",
+
+  "staff_eyebrow", "staff_title", "staff_text",
+  "manifesto_title", "manifesto_text",
+  "booking_eyebrow", "booking_title", "booking_text",
+  "footer_text", "seo_title", "seo_description"
+];
+
+const DEFAULT_SCHEDULE = {
+  working_days: "1,2,3,4,5",
+  working_start: "09:00",
+  working_end: "18:00",
+  slot_interval: "15"
+};
+
+// --------------------------------
 // Общие функции
-// ------------------------------
+// --------------------------------
 
 function base64url(bytes) {
   let binary = "";
-
-  for (const byte of bytes) {
-    binary += String.fromCharCode(byte);
-  }
+  for (const byte of bytes) binary += String.fromCharCode(byte);
 
   return btoa(binary)
     .replace(/\+/g, "-")
@@ -46,129 +72,18 @@ function decodeBase64url(value) {
     normalized + "=".repeat((4 - normalized.length % 4) % 4)
   );
 
-  return Uint8Array.from(
-    binary,
-    char => char.charCodeAt(0)
-  );
+  return Uint8Array.from(binary, char => char.charCodeAt(0));
 }
 
 async function signingKey(secret) {
   return crypto.subtle.importKey(
     "raw",
     encoder.encode(secret),
-    {
-      name: "HMAC",
-      hash: "SHA-256"
-    },
+    { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign", "verify"]
   );
 }
-
-// ------------------------------
-// Авторизация владельца
-// ------------------------------
-
-async function createSession(secret) {
-  const payload = base64url(
-    encoder.encode(
-      JSON.stringify({
-        role: "owner",
-        expires:
-          Math.floor(Date.now() / 1000) + SESSION_SECONDS
-      })
-    )
-  );
-
-  const key = await signingKey(secret);
-
-  const signature = await crypto.subtle.sign(
-    "HMAC",
-    key,
-    encoder.encode(payload)
-  );
-
-  return (
-    payload +
-    "." +
-    base64url(new Uint8Array(signature))
-  );
-}
-
-async function verifySession(request, secret) {
-  if (!secret) return false;
-
-  const cookie = request.headers.get("Cookie") || "";
-
-  const match = cookie.match(
-    new RegExp("(?:^|;\\s*)" + COOKIE_NAME + "=([^;]+)")
-  );
-
-  if (!match) return false;
-
-  try {
-    const parts = match[1].split(".");
-
-    if (parts.length !== 2) return false;
-
-    const key = await signingKey(secret);
-
-    const valid = await crypto.subtle.verify(
-      "HMAC",
-      key,
-      decodeBase64url(parts[1]),
-      encoder.encode(parts[0])
-    );
-
-    if (!valid) return false;
-
-    const payload = JSON.parse(
-      new TextDecoder().decode(
-        decodeBase64url(parts[0])
-      )
-    );
-
-    return (
-      payload.role === "owner" &&
-      Number.isInteger(payload.expires) &&
-      payload.expires > Math.floor(Date.now() / 1000)
-    );
-
-  } catch {
-    return false;
-  }
-}
-
-function sessionCookie(value) {
-  return (
-    `${COOKIE_NAME}=${value}; ` +
-    `HttpOnly; Secure; SameSite=Strict; ` +
-    `Path=/api; Max-Age=${SESSION_SECONDS}`
-  );
-}
-
-function clearSessionCookie() {
-  return (
-    `${COOKIE_NAME}=; ` +
-    `HttpOnly; Secure; SameSite=Strict; ` +
-    "Path=/api; Max-Age=0"
-  );
-}
-
-async function requireOwner(request, env) {
-  if (!env.SESSION_SECRET) {
-    throw new Error("Не настроен SESSION_SECRET");
-  }
-
-  return verifySession(
-    request,
-    env.SESSION_SECRET
-  );
-}
-
-// ------------------------------
-// Проверка данных
-// ------------------------------
 
 function safeText(value, maxLength = 500) {
   if (typeof value !== "string") return null;
@@ -183,10 +98,7 @@ function safeText(value, maxLength = 500) {
 function validOrigin(request) {
   const origin = request.headers.get("Origin");
 
-  return (
-    !origin ||
-    origin === new URL(request.url).origin
-  );
+  return !origin || origin === new URL(request.url).origin;
 }
 
 async function readBody(request) {
@@ -194,10 +106,7 @@ async function readBody(request) {
     request.headers.get("Content-Length") || 0
   );
 
-  if (
-    Number.isFinite(contentLength) &&
-    contentLength > 20000
-  ) {
+  if (Number.isFinite(contentLength) && contentLength > 20000) {
     throw new Error("Слишком большой запрос");
   }
 
@@ -215,15 +124,23 @@ async function readBody(request) {
     throw new Error("Некорректный JSON");
   }
 
-  if (
-    !body ||
-    typeof body !== "object" ||
-    Array.isArray(body)
-  ) {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
     throw new Error("Некорректные данные");
   }
 
   return body;
+}
+
+function validId(value) {
+  const id = Number(value);
+  return Number.isInteger(id) && id > 0;
+}
+
+function validPhone(value) {
+  if (typeof value !== "string") return false;
+
+  const digits = value.replace(/\D/g, "");
+  return digits.length >= 7 && digits.length <= 15;
 }
 
 function validAppointment(value) {
@@ -235,20 +152,10 @@ function validAppointment(value) {
   }
 
   const [datePart, timePart] = value.split("T");
+  const [year, month, day] = datePart.split("-").map(Number);
+  const [hour, minute] = timePart.split(":").map(Number);
 
-  const [year, month, day] =
-    datePart.split("-").map(Number);
-
-  const [hour, minute] =
-    timePart.split(":").map(Number);
-
-  const date = new Date(
-    year,
-    month - 1,
-    day,
-    hour,
-    minute
-  );
+  const date = new Date(year, month - 1, day, hour, minute);
 
   return (
     date.getFullYear() === year &&
@@ -259,21 +166,112 @@ function validAppointment(value) {
   );
 }
 
-function validPhone(value) {
-  const digits = value.replace(/\D/g, "");
+function validBookingDate(value) {
+  if (
+    typeof value !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(value)
+  ) {
+    return false;
+  }
 
-  return digits.length >= 7 && digits.length <= 15;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  );
 }
 
-function validId(value) {
-  const id = Number(value);
+// --------------------------------
+// Авторизация владельца
+// --------------------------------
 
-  return Number.isInteger(id) && id > 0;
+async function createSession(secret) {
+  const payload = base64url(
+    encoder.encode(JSON.stringify({
+      role: "owner",
+      expires: Math.floor(Date.now() / 1000) + SESSION_SECONDS
+    }))
+  );
+
+  const key = await signingKey(secret);
+
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    encoder.encode(payload)
+  );
+
+  return payload + "." + base64url(new Uint8Array(signature));
 }
 
-// ------------------------------
-// Московское время
-// ------------------------------
+async function verifySession(request, secret) {
+  if (!secret) return false;
+
+  const cookie = request.headers.get("Cookie") || "";
+  const match = cookie.match(
+    new RegExp("(?:^|;\\s*)" + COOKIE_NAME + "=([^;]+)")
+  );
+
+  if (!match) return false;
+
+  try {
+    const parts = match[1].split(".");
+    if (parts.length !== 2) return false;
+
+    const key = await signingKey(secret);
+
+    const valid = await crypto.subtle.verify(
+      "HMAC",
+      key,
+      decodeBase64url(parts[1]),
+      encoder.encode(parts[0])
+    );
+
+    if (!valid) return false;
+
+    const payload = JSON.parse(
+      new TextDecoder().decode(decodeBase64url(parts[0]))
+    );
+
+    return (
+      payload.role === "owner" &&
+      Number.isInteger(payload.expires) &&
+      payload.expires > Math.floor(Date.now() / 1000)
+    );
+  } catch {
+    return false;
+  }
+}
+
+function sessionCookie(value) {
+  return (
+    `${COOKIE_NAME}=${value}; ` +
+    `HttpOnly; Secure; SameSite=Strict; ` +
+    `Path=/api; Max-Age=${SESSION_SECONDS}`
+  );
+}
+
+function clearSessionCookie() {
+  return (
+    `${COOKIE_NAME}=; ` +
+    `HttpOnly; Secure; SameSite=Strict; Path=/api; Max-Age=0`
+  );
+}
+
+async function requireOwner(request, env) {
+  if (!env.SESSION_SECRET) {
+    throw new Error("Не настроен SESSION_SECRET");
+  }
+
+  return verifySession(request, env.SESSION_SECRET);
+}
+
+// --------------------------------
+// Московское время и расписание
+// --------------------------------
 
 function getMoscowDateTime() {
   const parts = new Intl.DateTimeFormat("en-GB", {
@@ -296,65 +294,116 @@ function getMoscowDateTime() {
   );
 }
 
-function validBookingDate(value) {
+function getWorkingSchedule(settings = {}) {
+  const daysRaw = String(
+    settings.working_days ?? DEFAULT_SCHEDULE.working_days
+  );
+
+  const start = String(
+    settings.working_start ?? DEFAULT_SCHEDULE.working_start
+  );
+
+  const end = String(
+    settings.working_end ?? DEFAULT_SCHEDULE.working_end
+  );
+
+  const interval = Number(
+    settings.slot_interval ?? DEFAULT_SCHEDULE.slot_interval
+  );
+
+  const days = daysRaw.split(",").map(Number);
+
+  const validDays =
+    days.length > 0 &&
+    days.every(day =>
+      Number.isInteger(day) && day >= 0 && day <= 6
+    ) &&
+    new Set(days).size === days.length;
+
+  const validTime = value =>
+    /^\d{2}:\d{2}$/.test(value) &&
+    Number(value.slice(0, 2)) <= 23 &&
+    Number(value.slice(3, 5)) <= 59;
+
   if (
-    typeof value !== "string" ||
-    !/^\d{4}-\d{2}-\d{2}$/.test(value)
+    !validDays ||
+    !validTime(start) ||
+    !validTime(end) ||
+    !Number.isInteger(interval) ||
+    interval < 5 ||
+    interval > 60
   ) {
-    return false;
+    return {
+      days: [1, 2, 3, 4, 5],
+      start: "09:00",
+      end: "18:00",
+      interval: 15
+    };
   }
 
-  const [year, month, day] =
-    value.split("-").map(Number);
+  const startMinutes =
+    Number(start.slice(0, 2)) * 60 +
+    Number(start.slice(3, 5));
 
-  const date = new Date(
-    Date.UTC(year, month - 1, day)
-  );
+  const endMinutes =
+    Number(end.slice(0, 2)) * 60 +
+    Number(end.slice(3, 5));
 
-  return (
-    date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day
-  );
+  if (startMinutes >= endMinutes) {
+    return {
+      days: [1, 2, 3, 4, 5],
+      start: "09:00",
+      end: "18:00",
+      interval: 15
+    };
+  }
+
+  return { days, start, end, interval };
 }
 
-function isWorkingDay(dateString) {
+function isWorkingDay(dateString, schedule) {
   if (!validBookingDate(dateString)) return false;
 
-  const [year, month, day] =
-    dateString.split("-").map(Number);
+  const [year, month, day] = dateString.split("-").map(Number);
 
   const weekday = new Date(
     Date.UTC(year, month - 1, day)
   ).getUTCDay();
 
-  return weekday >= 1 && weekday <= 5;
+  return schedule.days.includes(weekday);
 }
 
-function isWorkingAppointment(appointmentAt, duration) {
+function isWorkingAppointment(appointmentAt, duration, schedule) {
   if (!validAppointment(appointmentAt)) return false;
 
   const [date, time] = appointmentAt.split("T");
 
-  if (!isWorkingDay(date)) return false;
+  if (!isWorkingDay(date, schedule)) return false;
 
   const [hour, minute] = time.split(":").map(Number);
-
-  if (hour < 9 || hour >= 18) return false;
-
-  if (minute % 15 !== 0) return false;
-
   const startMinutes = hour * 60 + minute;
   const endMinutes = startMinutes + duration;
 
-  if (endMinutes > 18 * 60) return false;
+  const workingStart =
+    Number(schedule.start.slice(0, 2)) * 60 +
+    Number(schedule.start.slice(3, 5));
 
-  return appointmentAt > getMoscowDateTime();
+  const workingEnd =
+    Number(schedule.end.slice(0, 2)) * 60 +
+    Number(schedule.end.slice(3, 5));
+
+  return (
+    startMinutes >= workingStart &&
+    startMinutes < workingEnd &&
+    minute % schedule.interval === 0 &&
+    endMinutes <= workingEnd &&
+    appointmentAt > getMoscowDateTime()
+  );
 }
 
-// ------------------------------
+// --------------------------------
 // Работа с базой данных
-// ------------------------------
+// --------------------------------
 
 async function getSettings(db) {
   const result = await db.prepare(
@@ -362,10 +411,7 @@ async function getSettings(db) {
   ).all();
 
   return Object.fromEntries(
-    (result.results || []).map(row => [
-      row.key,
-      row.value
-    ])
+    (result.results || []).map(row => [row.key, row.value])
   );
 }
 
@@ -385,18 +431,12 @@ async function findActiveStaff(db, id) {
   ).bind(id).first();
 }
 
-// ------------------------------
-// Длительность услуг
-// ------------------------------
-
 async function getServiceDuration(db, serviceId, serviceName) {
   let service = null;
 
   if (serviceId !== null && serviceId !== undefined) {
     service = await db.prepare(
-      `SELECT duration_minutes
-       FROM services
-       WHERE id = ?`
+      "SELECT duration_minutes FROM services WHERE id = ?"
     ).bind(serviceId).first();
   }
 
@@ -409,20 +449,16 @@ async function getServiceDuration(db, serviceId, serviceName) {
     ).bind(serviceName).first();
   }
 
-  const duration = Number(
-    service?.duration_minutes ?? 60
-  );
+  const duration = Number(service?.duration_minutes ?? 60);
 
-  return (
-    Number.isInteger(duration) && duration > 0
-      ? duration
-      : 60
-  );
+  return Number.isInteger(duration) && duration > 0
+    ? duration
+    : 60;
 }
 
-// ------------------------------
-// Проверка занятости врача
-// ------------------------------
+// --------------------------------
+// Проверка занятости специалиста
+// --------------------------------
 
 async function hasStaffConflict(
   db,
@@ -434,18 +470,13 @@ async function hasStaffConflict(
   const conflict = await db.prepare(
     `SELECT b.id
      FROM bookings b
-
-     LEFT JOIN services s
-       ON s.id = b.service_id
-
+     LEFT JOIN services s ON s.id = b.service_id
      WHERE b.staff_id = ?
        AND b.status != 'cancelled'
        AND b.appointment_at IS NOT NULL
        AND b.appointment_at != ''
-
        AND datetime(b.appointment_at) <
            datetime(?, '+' || ? || ' minutes')
-
        AND datetime(
          b.appointment_at,
          '+' || COALESCE(
@@ -460,9 +491,7 @@ async function hasStaffConflict(
            60
          ) || ' minutes'
        ) > datetime(?)
-
        AND (? IS NULL OR b.id != ?)
-
      LIMIT 1`
   ).bind(
     staffId,
@@ -476,62 +505,57 @@ async function hasStaffConflict(
   return Boolean(conflict);
 }
 
-// ------------------------------
-// Получение свободного времени
-// ------------------------------
+// --------------------------------
+// Свободное время
+// --------------------------------
 
 async function getAvailableSlots(
   db,
   date,
   staffId,
-  serviceId
+  serviceId,
+  settings
 ) {
+  const schedule = getWorkingSchedule(settings);
+
   if (
     !validBookingDate(date) ||
-    !isWorkingDay(date) ||
+    !isWorkingDay(date, schedule) ||
     !validId(staffId) ||
     !validId(serviceId)
   ) {
     return [];
   }
 
-  const service = await findActiveService(
-    db,
-    Number(serviceId)
-  );
-
-  const staff = await findActiveStaff(
-    db,
-    Number(staffId)
-  );
+  const service = await findActiveService(db, Number(serviceId));
+  const staff = await findActiveStaff(db, Number(staffId));
 
   if (!service || !staff) return [];
 
-  const duration = Number(
-    service.duration_minutes
-  ) || 60;
+  const duration = Number(service.duration_minutes) || 60;
+
+  const startMinutes =
+    Number(schedule.start.slice(0, 2)) * 60 +
+    Number(schedule.start.slice(3, 5));
+
+  const endMinutes =
+    Number(schedule.end.slice(0, 2)) * 60 +
+    Number(schedule.end.slice(3, 5));
 
   const slots = [];
 
   for (
-    let minutes = 9 * 60;
-    minutes + duration <= 18 * 60;
-    minutes += 15
+    let minutes = startMinutes;
+    minutes + duration <= endMinutes;
+    minutes += schedule.interval
   ) {
-    const hour = String(
-      Math.floor(minutes / 60)
-    ).padStart(2, "0");
-
-    const minute = String(
-      minutes % 60
-    ).padStart(2, "0");
+    const hour = String(Math.floor(minutes / 60)).padStart(2, "0");
+    const minute = String(minutes % 60).padStart(2, "0");
 
     const time = `${hour}:${minute}`;
     const appointmentAt = `${date}T${time}`;
 
-    if (appointmentAt <= getMoscowDateTime()) {
-      continue;
-    }
+    if (appointmentAt <= getMoscowDateTime()) continue;
 
     const conflict = await hasStaffConflict(
       db,
@@ -540,9 +564,7 @@ async function getAvailableSlots(
       duration
     );
 
-    if (!conflict) {
-      slots.push(time);
-    }
+    if (!conflict) slots.push(time);
   }
 
   return slots;
@@ -561,17 +583,18 @@ async function getPublicAvailability(request, db) {
     !validId(serviceId)
   ) {
     return json(
-      {
-        error: "Выберите корректные услугу, врача и дату"
-      },
+      { error: "Выберите корректные услугу, врача и дату" },
       400
     );
   }
 
-  if (!isWorkingDay(date)) {
+  const settings = await getSettings(db);
+  const schedule = getWorkingSchedule(settings);
+
+  if (!isWorkingDay(date, schedule)) {
     return json({
       slots: [],
-      message: "В выходные дни клиника не работает"
+      message: "В этот день клиника не работает"
     });
   }
 
@@ -579,48 +602,39 @@ async function getPublicAvailability(request, db) {
     db,
     date,
     staffId,
-    serviceId
+    serviceId,
+    settings
   );
 
   return json({ slots });
 }
 
-// ------------------------------
+// --------------------------------
 // Публичные данные сайта
-// ------------------------------
+// --------------------------------
 
 async function getPublicData(db) {
-  const [settings, services, staff] =
-    await Promise.all([
-      getSettings(db),
+  const [settings, services, staff] = await Promise.all([
+    getSettings(db),
 
-      db.prepare(
-        `SELECT
-          id,
-          title,
-          description,
-          price,
-          image_url,
-          duration_minutes,
-          sort_order
-         FROM services
-         WHERE active = 1
-         ORDER BY sort_order, id`
-      ).all(),
+    db.prepare(
+      `SELECT
+        id, title, description, price,
+        image_url, duration_minutes, sort_order
+       FROM services
+       WHERE active = 1
+       ORDER BY sort_order, id`
+    ).all(),
 
-      db.prepare(
-        `SELECT
-          id,
-          name,
-          position,
-          description,
-          photo_url,
-          sort_order
-         FROM staff
-         WHERE active = 1
-         ORDER BY sort_order, id`
-      ).all()
-    ]);
+    db.prepare(
+      `SELECT
+        id, name, position, description,
+        photo_url, sort_order
+       FROM staff
+       WHERE active = 1
+       ORDER BY sort_order, id`
+    ).all()
+  ]);
 
   return {
     settings,
@@ -629,16 +643,13 @@ async function getPublicData(db) {
   };
 }
 
-// ------------------------------
-// Публичная форма записи
-// ------------------------------
+// --------------------------------
+// Публичная запись
+// --------------------------------
 
 async function createPublicBooking(request, db) {
   if (!validOrigin(request)) {
-    return json(
-      { error: "Запрос отклонён" },
-      403
-    );
+    return json({ error: "Запрос отклонён" }, 403);
   }
 
   let body;
@@ -646,24 +657,16 @@ async function createPublicBooking(request, db) {
   try {
     body = await readBody(request);
   } catch {
-    return json(
-      { error: "Некорректные данные формы" },
-      400
-    );
+    return json({ error: "Некорректные данные формы" }, 400);
   }
 
-  const website = safeText(
-    body.website ?? "",
-    200
-  );
+  const website = safeText(body.website ?? "", 200);
 
   if (website === null) {
-    return json(
-      { error: "Некорректные данные" },
-      400
-    );
+    return json({ error: "Некорректные данные" }, 400);
   }
 
+  // Honeypot: скрытое поле против простых ботов.
   if (website !== "") {
     return json({
       success: true,
@@ -676,15 +679,8 @@ async function createPublicBooking(request, db) {
     120
   );
 
-  const phone = safeText(
-    body.phone ?? "",
-    40
-  );
-
-  const message = safeText(
-    body.message ?? "",
-    2000
-  );
+  const phone = safeText(body.phone ?? "", 40);
+  const message = safeText(body.message ?? "", 2000);
 
   if (
     !clientName ||
@@ -708,15 +704,8 @@ async function createPublicBooking(request, db) {
   const staffId = Number(body.staff_id);
   const appointmentAt = body.appointment_at;
 
-  const service = await findActiveService(
-    db,
-    serviceId
-  );
-
-  const staff = await findActiveStaff(
-    db,
-    staffId
-  );
+  const service = await findActiveService(db, serviceId);
+  const staff = await findActiveStaff(db, staffId);
 
   if (!service) {
     return json(
@@ -730,17 +719,17 @@ async function createPublicBooking(request, db) {
   if (!staff) {
     return json(
       {
-        error: "Выбранный врач больше недоступен. Обновите страницу."
+        error: "Выбранный специалист больше недоступен. Обновите страницу."
       },
       400
     );
   }
 
-  const duration = Number(
-    service.duration_minutes
-  ) || 60;
+  const duration = Number(service.duration_minutes) || 60;
+  const settings = await getSettings(db);
+  const schedule = getWorkingSchedule(settings);
 
-  if (!isWorkingAppointment(appointmentAt, duration)) {
+  if (!isWorkingAppointment(appointmentAt, duration, schedule)) {
     return json(
       {
         error: "Выбранное время находится вне рабочего расписания или уже прошло"
@@ -749,42 +738,23 @@ async function createPublicBooking(request, db) {
     );
   }
 
-  /*
-    Проверка и добавление выполняются одним SQL-запросом.
-    Это уменьшает риск двойной записи на один слот.
-  */
-
   const result = await db.prepare(
     `INSERT INTO bookings (
-      client_name,
-      phone,
-      service,
-      message,
-      status,
-      appointment_at,
-      staff_id,
-      service_id,
-      notes,
-      updated_at
+      client_name, phone, service, message, status,
+      appointment_at, staff_id, service_id, notes, updated_at
     )
     SELECT
       ?, ?, ?, ?, 'new', ?, ?, ?, ?, CURRENT_TIMESTAMP
-
     WHERE NOT EXISTS (
       SELECT 1
       FROM bookings b
-
-      LEFT JOIN services s
-        ON s.id = b.service_id
-
+      LEFT JOIN services s ON s.id = b.service_id
       WHERE b.staff_id = ?
         AND b.status != 'cancelled'
         AND b.appointment_at IS NOT NULL
         AND b.appointment_at != ''
-
         AND datetime(b.appointment_at) <
             datetime(?, '+' || ? || ' minutes')
-
         AND datetime(
           b.appointment_at,
           '+' || COALESCE(
@@ -834,166 +804,223 @@ async function createPublicBooking(request, db) {
   );
 }
 
-// ------------------------------
-// Административные настройки
-// ------------------------------
+// --------------------------------
+// Настройки сайта
+// --------------------------------
+
+function validateScheduleInput(body, currentSettings) {
+  const candidate = {
+    ...currentSettings,
+    ...body
+  };
+
+  const daysRaw = String(
+    candidate.working_days ?? DEFAULT_SCHEDULE.working_days
+  );
+
+  const days = daysRaw.split(",").map(Number);
+
+  if (
+    !days.length ||
+    days.some(day =>
+      !Number.isInteger(day) || day < 0 || day > 6
+    ) ||
+    new Set(days).size !== days.length
+  ) {
+    return "Рабочие дни должны быть числами от 0 до 6 через запятую";
+  }
+
+  const start = String(
+    candidate.working_start ?? DEFAULT_SCHEDULE.working_start
+  );
+
+  const end = String(
+    candidate.working_end ?? DEFAULT_SCHEDULE.working_end
+  );
+
+  const validTime = value =>
+    /^\d{2}:\d{2}$/.test(value) &&
+    Number(value.slice(0, 2)) <= 23 &&
+    Number(value.slice(3, 5)) <= 59;
+
+  if (!validTime(start) || !validTime(end)) {
+    return "Укажите время в формате ЧЧ:ММ";
+  }
+
+  const startMinutes =
+    Number(start.slice(0, 2)) * 60 +
+    Number(start.slice(3, 5));
+
+  const endMinutes =
+    Number(end.slice(0, 2)) * 60 +
+    Number(end.slice(3, 5));
+
+  if (startMinutes >= endMinutes) {
+    return "Время окончания должно быть позже времени начала";
+  }
+
+  const interval = Number(candidate.slot_interval);
+
+  if (
+    !Number.isInteger(interval) ||
+    interval < 5 ||
+    interval > 60
+  ) {
+    return "Интервал записи должен быть от 5 до 60 минут";
+  }
+
+  return null;
+}
 
 async function handleSettings(request, db, method) {
-  const allowedKeys = [
-    "studio_name",
-    "phone",
-    "address",
-    "working_hours"
-  ];
-
   if (method === "GET") {
     return json(await getSettings(db));
   }
 
-  if (method === "PUT") {
-    let body;
+  if (method !== "PUT") {
+    return json({ error: "Метод не поддерживается" }, 405);
+  }
 
-    try {
-      body = await readBody(request);
-    } catch {
+  let body;
+
+  try {
+    body = await readBody(request);
+  } catch {
+    return json({ error: "Некорректные данные" }, 400);
+  }
+
+  const unknownKeys = Object.keys(body).filter(
+    key => !SETTING_KEYS.includes(key)
+  );
+
+  if (unknownKeys.length) {
+    return json(
+      { error: `Неизвестные настройки: ${unknownKeys.join(", ")}` },
+      400
+    );
+  }
+
+  const currentSettings = await getSettings(db);
+
+  const scheduleError = validateScheduleInput(
+    body,
+    currentSettings
+  );
+
+  const scheduleFields = [
+    "working_days",
+    "working_start",
+    "working_end",
+    "slot_interval"
+  ];
+
+  const changesSchedule = scheduleFields.some(
+    key => body[key] !== undefined
+  );
+
+  if (changesSchedule && scheduleError) {
+    return json({ error: scheduleError }, 400);
+  }
+
+  const statements = [];
+
+  for (const key of SETTING_KEYS) {
+    if (body[key] === undefined) continue;
+
+    const maxLength = [
+      "hero_image",
+      "about_image",
+      "map_url"
+    ].includes(key) ? 2000 : 5000;
+
+    const value = safeText(body[key], maxLength);
+
+    if (value === null) {
       return json(
-        { error: "Некорректные данные" },
+        { error: `Некорректное поле: ${key}` },
         400
       );
     }
 
-    const statements = [];
-
-    for (const key of allowedKeys) {
-      if (body[key] === undefined) continue;
-
-      const value = safeText(body[key], 300);
-
-      if (value === null) {
-        return json(
-          { error: `Некорректное поле: ${key}` },
-          400
-        );
-      }
-
-      statements.push(
-        db.prepare(
-          `INSERT INTO site_settings (key, value)
-           VALUES (?, ?)
-           ON CONFLICT(key)
-           DO UPDATE SET value = excluded.value`
-        ).bind(key, value)
-      );
-    }
-
-    if (statements.length) {
-      await db.batch(statements);
-    }
-
-    return json({
-      success: true,
-      settings: await getSettings(db)
-    });
+    statements.push(
+      db.prepare(
+        `INSERT INTO site_settings (key, value)
+         VALUES (?, ?)
+         ON CONFLICT(key)
+         DO UPDATE SET value = excluded.value`
+      ).bind(key, value)
+    );
   }
 
-  return json(
-    { error: "Метод не поддерживается" },
-    405
-  );
+  if (statements.length) {
+    await db.batch(statements);
+  }
+
+  return json({
+    success: true,
+    settings: await getSettings(db)
+  });
 }
 
-// ------------------------------
+// --------------------------------
 // Управление услугами
-// ------------------------------
+// --------------------------------
 
 async function handleServices(request, db, route, method) {
   if (route === "/api/admin/services") {
     if (method === "GET") {
       const result = await db.prepare(
-        `SELECT *
-         FROM services
-         ORDER BY sort_order, id`
+        "SELECT * FROM services ORDER BY sort_order, id"
       ).all();
 
       return json(result.results || []);
     }
 
-    if (method === "POST") {
-      let body;
-
-      try {
-        body = await readBody(request);
-      } catch {
-        return json(
-          { error: "Некорректные данные" },
-          400
-        );
-      }
-
-      const title = safeText(body.title, 120);
-      const description = safeText(
-        body.description ?? "",
-        1000
-      );
-      const price = safeText(
-        body.price ?? "",
-        80
-      );
-      const image = safeText(
-        body.image_url ?? "",
-        1000
-      );
-      const order = Number(body.sort_order ?? 0);
-      const duration = Number(body.duration_minutes ?? 60);
-
-      if (
-        !title ||
-        description === null ||
-        price === null ||
-        image === null ||
-        !Number.isInteger(order) ||
-        Math.abs(order) > 10000 ||
-        !Number.isInteger(duration) ||
-        duration < 5 ||
-        duration > 600
-      ) {
-        return json(
-          { error: "Проверьте поля услуги" },
-          400
-        );
-      }
-
-      const result = await db.prepare(
-        `INSERT INTO services (
-          title,
-          description,
-          price,
-          image_url,
-          duration_minutes,
-          sort_order
-        )
-        VALUES (?, ?, ?, ?, ?, ?)`
-      ).bind(
-        title,
-        description,
-        price,
-        image,
-        duration,
-        order
-      ).run();
-
-      return json(
-        {
-          success: true,
-          id: result.meta.last_row_id
-        },
-        201
-      );
+    if (method !== "POST") {
+      return json({ error: "Метод не поддерживается" }, 405);
     }
 
+    let body;
+
+    try {
+      body = await readBody(request);
+    } catch {
+      return json({ error: "Некорректные данные" }, 400);
+    }
+
+    const title = safeText(body.title, 120);
+    const description = safeText(body.description ?? "", 1000);
+    const price = safeText(body.price ?? "", 80);
+    const image = safeText(body.image_url ?? "", 1000);
+    const order = Number(body.sort_order ?? 0);
+    const duration = Number(body.duration_minutes ?? 60);
+
+    if (
+      !title ||
+      description === null ||
+      price === null ||
+      image === null ||
+      !Number.isInteger(order) ||
+      Math.abs(order) > 10000 ||
+      !Number.isInteger(duration) ||
+      duration < 5 ||
+      duration > 600
+    ) {
+      return json({ error: "Проверьте поля услуги" }, 400);
+    }
+
+    const result = await db.prepare(
+      `INSERT INTO services (
+        title, description, price, image_url,
+        duration_minutes, sort_order
+      ) VALUES (?, ?, ?, ?, ?, ?)`
+    ).bind(
+      title, description, price, image, duration, order
+    ).run();
+
     return json(
-      { error: "Метод не поддерживается" },
-      405
+      { success: true, id: result.meta.last_row_id },
+      201
     );
   }
 
@@ -1005,240 +1032,166 @@ async function handleServices(request, db, route, method) {
 
   const id = Number(match[1]);
 
-  if (method === "PUT") {
-    let body;
-
-    try {
-      body = await readBody(request);
-    } catch {
-      return json(
-        { error: "Некорректные данные" },
-        400
-      );
-    }
-
-    const fields = {
-      title: ["title", 120],
-      description: ["description", 1000],
-      price: ["price", 80],
-      image_url: ["image_url", 1000]
-    };
-
-    const updates = [];
-
-    for (const [key, [column, max]] of Object.entries(fields)) {
-      if (body[key] === undefined) continue;
-
-      const value = safeText(body[key], max);
-
-      if (value === null) {
-        return json(
-          { error: `Некорректное поле: ${key}` },
-          400
-        );
-      }
-
-      updates.push({ column, value });
-    }
-
-    if (body.duration_minutes !== undefined) {
-      const duration = Number(body.duration_minutes);
-
-      if (
-        !Number.isInteger(duration) ||
-        duration < 5 ||
-        duration > 600
-      ) {
-        return json(
-          { error: "Некорректная продолжительность услуги" },
-          400
-        );
-      }
-
-      updates.push({
-        column: "duration_minutes",
-        value: duration
-      });
-    }
-
-    if (body.active !== undefined) {
-      if (![0, 1, false, true].includes(body.active)) {
-        return json(
-          { error: "Некорректный статус" },
-          400
-        );
-      }
-
-      updates.push({
-        column: "active",
-        value: body.active ? 1 : 0
-      });
-    }
-
-    if (body.sort_order !== undefined) {
-      const order = Number(body.sort_order);
-
-      if (
-        !Number.isInteger(order) ||
-        Math.abs(order) > 10000
-      ) {
-        return json(
-          { error: "Некорректный порядок" },
-          400
-        );
-      }
-
-      updates.push({
-        column: "sort_order",
-        value: order
-      });
-    }
-
-    if (!updates.length) {
-      return json(
-        { error: "Нет изменений" },
-        400
-      );
-    }
-
-    const setClause = updates
-      .map(item => `${item.column} = ?`)
-      .join(", ");
-
-    const result = await db.prepare(
-      `UPDATE services
-       SET ${setClause}
-       WHERE id = ?`
-    ).bind(
-      ...updates.map(item => item.value),
-      id
-    ).run();
-
-    if (!result.meta.changes) {
-      return json(
-        { error: "Услуга не найдена" },
-        404
-      );
-    }
-
-    return json({
-      success: true,
-      changes: result.meta.changes
-    });
-  }
-
   if (method === "DELETE") {
     const result = await db.prepare(
-      `UPDATE services
-       SET active = 0
-       WHERE id = ?`
+      "UPDATE services SET active = 0 WHERE id = ?"
     ).bind(id).run();
 
     if (!result.meta.changes) {
+      return json({ error: "Услуга не найдена" }, 404);
+    }
+
+    return json({ success: true, changes: result.meta.changes });
+  }
+
+  if (method !== "PUT") {
+    return json({ error: "Метод не поддерживается" }, 405);
+  }
+
+  let body;
+
+  try {
+    body = await readBody(request);
+  } catch {
+    return json({ error: "Некорректные данные" }, 400);
+  }
+
+  const fields = {
+    title: ["title", 120],
+    description: ["description", 1000],
+    price: ["price", 80],
+    image_url: ["image_url", 1000]
+  };
+
+  const updates = [];
+
+  for (const [key, [column, max]] of Object.entries(fields)) {
+    if (body[key] === undefined) continue;
+
+    const value = safeText(body[key], max);
+
+    if (value === null) {
+      return json({ error: `Некорректное поле: ${key}` }, 400);
+    }
+
+    updates.push({ column, value });
+  }
+
+  if (body.duration_minutes !== undefined) {
+    const duration = Number(body.duration_minutes);
+
+    if (
+      !Number.isInteger(duration) ||
+      duration < 5 ||
+      duration > 600
+    ) {
       return json(
-        { error: "Услуга не найдена" },
-        404
+        { error: "Некорректная продолжительность услуги" },
+        400
       );
     }
 
-    return json({
-      success: true,
-      changes: result.meta.changes
+    updates.push({
+      column: "duration_minutes",
+      value: duration
     });
   }
 
-  return json(
-    { error: "Метод не поддерживается" },
-    405
-  );
+  if (body.active !== undefined) {
+    if (![0, 1, false, true].includes(body.active)) {
+      return json({ error: "Некорректный статус" }, 400);
+    }
+
+    updates.push({
+      column: "active",
+      value: body.active ? 1 : 0
+    });
+  }
+
+  if (body.sort_order !== undefined) {
+    const order = Number(body.sort_order);
+
+    if (!Number.isInteger(order) || Math.abs(order) > 10000) {
+      return json({ error: "Некорректный порядок" }, 400);
+    }
+
+    updates.push({ column: "sort_order", value: order });
+  }
+
+  if (!updates.length) {
+    return json({ error: "Нет изменений" }, 400);
+  }
+
+  const setClause = updates
+    .map(item => `${item.column} = ?`)
+    .join(", ");
+
+  const result = await db.prepare(
+    `UPDATE services SET ${setClause} WHERE id = ?`
+  ).bind(
+    ...updates.map(item => item.value),
+    id
+  ).run();
+
+  if (!result.meta.changes) {
+    return json({ error: "Услуга не найдена" }, 404);
+  }
+
+  return json({ success: true, changes: result.meta.changes });
 }
 
-// ------------------------------
+// --------------------------------
 // Управление командой
-// ------------------------------
+// --------------------------------
 
 async function handleStaff(request, db, route, method) {
   if (route === "/api/admin/staff") {
     if (method === "GET") {
       const result = await db.prepare(
-        `SELECT *
-         FROM staff
-         ORDER BY sort_order, id`
+        "SELECT * FROM staff ORDER BY sort_order, id"
       ).all();
 
       return json(result.results || []);
     }
 
-    if (method === "POST") {
-      let body;
-
-      try {
-        body = await readBody(request);
-      } catch {
-        return json(
-          { error: "Некорректные данные" },
-          400
-        );
-      }
-
-      const name = safeText(body.name, 120);
-      const position = safeText(
-        body.position ?? "",
-        120
-      );
-      const description = safeText(
-        body.description ?? "",
-        1000
-      );
-      const photo = safeText(
-        body.photo_url ?? "",
-        1000
-      );
-      const order = Number(body.sort_order ?? 0);
-
-      if (
-        !name ||
-        position === null ||
-        description === null ||
-        photo === null ||
-        !Number.isInteger(order) ||
-        Math.abs(order) > 10000
-      ) {
-        return json(
-          { error: "Проверьте поля сотрудника" },
-          400
-        );
-      }
-
-      const result = await db.prepare(
-        `INSERT INTO staff (
-          name,
-          position,
-          description,
-          photo_url,
-          sort_order
-        )
-        VALUES (?, ?, ?, ?, ?)`
-      ).bind(
-        name,
-        position,
-        description,
-        photo,
-        order
-      ).run();
-
-      return json(
-        {
-          success: true,
-          id: result.meta.last_row_id
-        },
-        201
-      );
+    if (method !== "POST") {
+      return json({ error: "Метод не поддерживается" }, 405);
     }
 
+    let body;
+
+    try {
+      body = await readBody(request);
+    } catch {
+      return json({ error: "Некорректные данные" }, 400);
+    }
+
+    const name = safeText(body.name, 120);
+    const position = safeText(body.position ?? "", 120);
+    const description = safeText(body.description ?? "", 1000);
+    const photo = safeText(body.photo_url ?? "", 1000);
+    const order = Number(body.sort_order ?? 0);
+
+    if (
+      !name ||
+      position === null ||
+      description === null ||
+      photo === null ||
+      !Number.isInteger(order) ||
+      Math.abs(order) > 10000
+    ) {
+      return json({ error: "Проверьте поля сотрудника" }, 400);
+    }
+
+    const result = await db.prepare(
+      `INSERT INTO staff (
+        name, position, description, photo_url, sort_order
+      ) VALUES (?, ?, ?, ?, ?)`
+    ).bind(name, position, description, photo, order).run();
+
     return json(
-      { error: "Метод не поддерживается" },
-      405
+      { success: true, id: result.meta.last_row_id },
+      201
     );
   }
 
@@ -1250,137 +1203,97 @@ async function handleStaff(request, db, route, method) {
 
   const id = Number(match[1]);
 
-  if (method === "PUT") {
-    let body;
-
-    try {
-      body = await readBody(request);
-    } catch {
-      return json(
-        { error: "Некорректные данные" },
-        400
-      );
-    }
-
-    const fields = {
-      name: ["name", 120],
-      position: ["position", 120],
-      description: ["description", 1000],
-      photo_url: ["photo_url", 1000]
-    };
-
-    const updates = [];
-
-    for (const [key, [column, max]] of Object.entries(fields)) {
-      if (body[key] === undefined) continue;
-
-      const value = safeText(body[key], max);
-
-      if (value === null) {
-        return json(
-          { error: `Некорректное поле: ${key}` },
-          400
-        );
-      }
-
-      updates.push({ column, value });
-    }
-
-    if (body.active !== undefined) {
-      if (![0, 1, false, true].includes(body.active)) {
-        return json(
-          { error: "Некорректный статус" },
-          400
-        );
-      }
-
-      updates.push({
-        column: "active",
-        value: body.active ? 1 : 0
-      });
-    }
-
-    if (body.sort_order !== undefined) {
-      const order = Number(body.sort_order);
-
-      if (
-        !Number.isInteger(order) ||
-        Math.abs(order) > 10000
-      ) {
-        return json(
-          { error: "Некорректный порядок" },
-          400
-        );
-      }
-
-      updates.push({
-        column: "sort_order",
-        value: order
-      });
-    }
-
-    if (!updates.length) {
-      return json(
-        { error: "Нет изменений" },
-        400
-      );
-    }
-
-    const setClause = updates
-      .map(item => `${item.column} = ?`)
-      .join(", ");
-
-    const result = await db.prepare(
-      `UPDATE staff
-       SET ${setClause}
-       WHERE id = ?`
-    ).bind(
-      ...updates.map(item => item.value),
-      id
-    ).run();
-
-    if (!result.meta.changes) {
-      return json(
-        { error: "Сотрудник не найден" },
-        404
-      );
-    }
-
-    return json({
-      success: true,
-      changes: result.meta.changes
-    });
-  }
-
   if (method === "DELETE") {
     const result = await db.prepare(
-      `UPDATE staff
-       SET active = 0
-       WHERE id = ?`
+      "UPDATE staff SET active = 0 WHERE id = ?"
     ).bind(id).run();
 
     if (!result.meta.changes) {
-      return json(
-        { error: "Сотрудник не найден" },
-        404
-      );
+      return json({ error: "Сотрудник не найден" }, 404);
     }
 
-    return json({
-      success: true,
-      changes: result.meta.changes
+    return json({ success: true, changes: result.meta.changes });
+  }
+
+  if (method !== "PUT") {
+    return json({ error: "Метод не поддерживается" }, 405);
+  }
+
+  let body;
+
+  try {
+    body = await readBody(request);
+  } catch {
+    return json({ error: "Некорректные данные" }, 400);
+  }
+
+  const fields = {
+    name: ["name", 120],
+    position: ["position", 120],
+    description: ["description", 1000],
+    photo_url: ["photo_url", 1000]
+  };
+
+  const updates = [];
+
+  for (const [key, [column, max]] of Object.entries(fields)) {
+    if (body[key] === undefined) continue;
+
+    const value = safeText(body[key], max);
+
+    if (value === null) {
+      return json({ error: `Некорректное поле: ${key}` }, 400);
+    }
+
+    updates.push({ column, value });
+  }
+
+  if (body.active !== undefined) {
+    if (![0, 1, false, true].includes(body.active)) {
+      return json({ error: "Некорректный статус" }, 400);
+    }
+
+    updates.push({
+      column: "active",
+      value: body.active ? 1 : 0
     });
   }
 
-  return json(
-    { error: "Метод не поддерживается" },
-    405
-  );
+  if (body.sort_order !== undefined) {
+    const order = Number(body.sort_order);
+
+    if (!Number.isInteger(order) || Math.abs(order) > 10000) {
+      return json({ error: "Некорректный порядок" }, 400);
+    }
+
+    updates.push({ column: "sort_order", value: order });
+  }
+
+  if (!updates.length) {
+    return json({ error: "Нет изменений" }, 400);
+  }
+
+  const setClause = updates
+    .map(item => `${item.column} = ?`)
+    .join(", ");
+
+  const result = await db.prepare(
+    `UPDATE staff SET ${setClause} WHERE id = ?`
+  ).bind(
+    ...updates.map(item => item.value),
+    id
+  ).run();
+
+  if (!result.meta.changes) {
+    return json({ error: "Сотрудник не найден" }, 404);
+  }
+
+  return json({ success: true, changes: result.meta.changes });
 }
 
-// ------------------------------
+// --------------------------------
 // Получение записей
-// ------------------------------
+// --------------------------------
 
 async function getBookings(db) {
   const result = await db.prepare(
@@ -1401,16 +1314,12 @@ async function getBookings(db) {
       s.duration_minutes AS duration_minutes,
       st.name AS staff_name
     FROM bookings b
-    LEFT JOIN services s
-      ON s.id = b.service_id
-    LEFT JOIN staff st
-      ON st.id = b.staff_id
+    LEFT JOIN services s ON s.id = b.service_id
+    LEFT JOIN staff st ON st.id = b.staff_id
     ORDER BY
       CASE
-        WHEN b.appointment_at IS NULL
-          OR b.appointment_at = ''
-        THEN 1
-        ELSE 0
+        WHEN b.appointment_at IS NULL OR b.appointment_at = ''
+        THEN 1 ELSE 0
       END,
       b.appointment_at ASC,
       b.created_at DESC,
@@ -1420,9 +1329,9 @@ async function getBookings(db) {
   return result.results || [];
 }
 
-// ------------------------------
+// --------------------------------
 // Создание записи владельцем
-// ------------------------------
+// --------------------------------
 
 async function createAdminBooking(request, db) {
   let body;
@@ -1430,31 +1339,13 @@ async function createAdminBooking(request, db) {
   try {
     body = await readBody(request);
   } catch {
-    return json(
-      { error: "Некорректные данные" },
-      400
-    );
+    return json({ error: "Некорректные данные" }, 400);
   }
 
-  const clientName = safeText(
-    body.client_name,
-    120
-  );
-
-  const phone = safeText(
-    body.phone,
-    40
-  );
-
-  const serviceNameInput = safeText(
-    body.service ?? "",
-    120
-  );
-
-  const notes = safeText(
-    body.notes ?? body.message ?? "",
-    2000
-  );
+  const clientName = safeText(body.client_name, 120);
+  const phone = safeText(body.phone, 40);
+  const serviceNameInput = safeText(body.service ?? "", 120);
+  const notes = safeText(body.notes ?? body.message ?? "", 2000);
 
   const appointmentAt = body.appointment_at;
   const status = body.status ?? "new";
@@ -1485,18 +1376,12 @@ async function createAdminBooking(request, db) {
     body.service_id !== ""
   ) {
     if (!validId(body.service_id)) {
-      return json(
-        { error: "Некорректная услуга" },
-        400
-      );
+      return json({ error: "Некорректная услуга" }, 400);
     }
 
     serviceId = Number(body.service_id);
 
-    const service = await findActiveService(
-      db,
-      serviceId
-    );
+    const service = await findActiveService(db, serviceId);
 
     if (!service) {
       return json(
@@ -1523,10 +1408,7 @@ async function createAdminBooking(request, db) {
   }
 
   if (!serviceName) {
-    return json(
-      { error: "Выберите услугу" },
-      400
-    );
+    return json({ error: "Выберите услугу" }, 400);
   }
 
   let staffId = null;
@@ -1537,18 +1419,12 @@ async function createAdminBooking(request, db) {
     body.staff_id !== ""
   ) {
     if (!validId(body.staff_id)) {
-      return json(
-        { error: "Некорректный сотрудник" },
-        400
-      );
+      return json({ error: "Некорректный сотрудник" }, 400);
     }
 
     staffId = Number(body.staff_id);
 
-    const staff = await findActiveStaff(
-      db,
-      staffId
-    );
+    const staff = await findActiveStaff(db, staffId);
 
     if (!staff) {
       return json(
@@ -1558,10 +1434,7 @@ async function createAdminBooking(request, db) {
     }
   }
 
-  if (
-    staffId !== null &&
-    status !== "cancelled"
-  ) {
+  if (staffId !== null && status !== "cancelled") {
     const duration = await getServiceDuration(
       db,
       serviceId,
@@ -1578,7 +1451,7 @@ async function createAdminBooking(request, db) {
     if (conflict) {
       return json(
         {
-          error: "В это время врач занят другой записью. Выберите другое время."
+          error: "В это время специалист занят другой записью. Выберите другое время."
         },
         409
       );
@@ -1587,16 +1460,8 @@ async function createAdminBooking(request, db) {
 
   const result = await db.prepare(
     `INSERT INTO bookings (
-      client_name,
-      phone,
-      service,
-      message,
-      status,
-      appointment_at,
-      staff_id,
-      service_id,
-      notes,
-      updated_at
+      client_name, phone, service, message, status,
+      appointment_at, staff_id, service_id, notes, updated_at
     )
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`
   ).bind(
@@ -1612,17 +1477,14 @@ async function createAdminBooking(request, db) {
   ).run();
 
   return json(
-    {
-      success: true,
-      id: result.meta.last_row_id
-    },
+    { success: true, id: result.meta.last_row_id },
     201
   );
 }
 
-// ------------------------------
+// --------------------------------
 // Обновление записи
-// ------------------------------
+// --------------------------------
 
 async function updateBooking(request, db, id) {
   let body;
@@ -1630,37 +1492,22 @@ async function updateBooking(request, db, id) {
   try {
     body = await readBody(request);
   } catch {
-    return json(
-      { error: "Некорректные данные" },
-      400
-    );
+    return json({ error: "Некорректные данные" }, 400);
   }
 
   const current = await db.prepare(
     `SELECT
-      id,
-      client_name,
-      phone,
-      service,
-      status,
-      appointment_at,
-      staff_id,
-      service_id,
-      notes,
-      message
+      id, client_name, phone, service, status,
+      appointment_at, staff_id, service_id, notes, message
      FROM bookings
      WHERE id = ?`
   ).bind(id).first();
 
   if (!current) {
-    return json(
-      { error: "Запись не найдена" },
-      404
-    );
+    return json({ error: "Запись не найдена" }, 404);
   }
 
   const updates = [];
-
   const addUpdate = (column, value) => {
     updates.push({ column, value });
   };
@@ -1669,10 +1516,7 @@ async function updateBooking(request, db, id) {
 
   if (body.status !== undefined) {
     if (!BOOKING_STATUSES.includes(body.status)) {
-      return json(
-        { error: "Недопустимый статус записи" },
-        400
-      );
+      return json({ error: "Недопустимый статус записи" }, 400);
     }
 
     nextStatus = body.status;
@@ -1680,51 +1524,30 @@ async function updateBooking(request, db, id) {
   }
 
   if (body.client_name !== undefined) {
-    const value = safeText(
-      body.client_name,
-      120
-    );
+    const value = safeText(body.client_name, 120);
 
     if (!value) {
-      return json(
-        { error: "Проверьте имя клиента" },
-        400
-      );
+      return json({ error: "Проверьте имя клиента" }, 400);
     }
 
     addUpdate("client_name", value);
   }
 
   if (body.phone !== undefined) {
-    const value = safeText(
-      body.phone,
-      40
-    );
+    const value = safeText(body.phone, 40);
 
     if (!value || !validPhone(value)) {
-      return json(
-        { error: "Проверьте телефон клиента" },
-        400
-      );
+      return json({ error: "Проверьте телефон клиента" }, 400);
     }
 
     addUpdate("phone", value);
   }
 
-  if (
-    body.notes !== undefined ||
-    body.message !== undefined
-  ) {
-    const value = safeText(
-      body.notes ?? body.message,
-      2000
-    );
+  if (body.notes !== undefined || body.message !== undefined) {
+    const value = safeText(body.notes ?? body.message, 2000);
 
     if (value === null) {
-      return json(
-        { error: "Слишком длинное примечание" },
-        400
-      );
+      return json({ error: "Слишком длинное примечание" }, 400);
     }
 
     addUpdate("notes", value);
@@ -1735,30 +1558,17 @@ async function updateBooking(request, db, id) {
   let nextServiceName = current.service || "";
 
   if (body.service_id !== undefined) {
-    if (
-      body.service_id === null ||
-      body.service_id === ""
-    ) {
+    if (body.service_id === null || body.service_id === "") {
       nextServiceId = null;
-
-      if (body.service === undefined) {
-        nextServiceName = "";
-      }
-
+      if (body.service === undefined) nextServiceName = "";
     } else {
       if (!validId(body.service_id)) {
-        return json(
-          { error: "Некорректная услуга" },
-          400
-        );
+        return json({ error: "Некорректная услуга" }, 400);
       }
 
       nextServiceId = Number(body.service_id);
 
-      const service = await findActiveService(
-        db,
-        nextServiceId
-      );
+      const service = await findActiveService(db, nextServiceId);
 
       if (!service) {
         return json(
@@ -1774,16 +1584,10 @@ async function updateBooking(request, db, id) {
     addUpdate("service", nextServiceName);
 
   } else if (body.service !== undefined) {
-    const value = safeText(
-      body.service,
-      120
-    );
+    const value = safeText(body.service, 120);
 
     if (!value) {
-      return json(
-        { error: "Выберите услугу" },
-        400
-      );
+      return json({ error: "Выберите услугу" }, 400);
     }
 
     nextServiceName = value;
@@ -1798,9 +1602,7 @@ async function updateBooking(request, db, id) {
 
     nextServiceId = service ? service.id : null;
 
-    if (service) {
-      nextServiceName = service.title;
-    }
+    if (service) nextServiceName = service.title;
 
     addUpdate("service", nextServiceName);
     addUpdate("service_id", nextServiceId);
@@ -1809,26 +1611,16 @@ async function updateBooking(request, db, id) {
   let nextStaffId = current.staff_id;
 
   if (body.staff_id !== undefined) {
-    if (
-      body.staff_id === null ||
-      body.staff_id === ""
-    ) {
+    if (body.staff_id === null || body.staff_id === "") {
       nextStaffId = null;
-
     } else {
       if (!validId(body.staff_id)) {
-        return json(
-          { error: "Некорректный сотрудник" },
-          400
-        );
+        return json({ error: "Некорректный сотрудник" }, 400);
       }
 
       nextStaffId = Number(body.staff_id);
 
-      const staff = await findActiveStaff(
-        db,
-        nextStaffId
-      );
+      const staff = await findActiveStaff(db, nextStaffId);
 
       if (!staff) {
         return json(
@@ -1852,18 +1644,11 @@ async function updateBooking(request, db, id) {
     }
 
     nextAppointmentAt = body.appointment_at;
-
-    addUpdate(
-      "appointment_at",
-      nextAppointmentAt
-    );
+    addUpdate("appointment_at", nextAppointmentAt);
   }
 
   if (!updates.length) {
-    return json(
-      { error: "Нет изменений" },
-      400
-    );
+    return json({ error: "Нет изменений" }, 400);
   }
 
   if (
@@ -1895,7 +1680,7 @@ async function updateBooking(request, db, id) {
     if (conflict) {
       return json(
         {
-          error: "В это время врач занят другой записью. Выберите другое время."
+          error: "В это время специалист занят другой записью. Выберите другое время."
         },
         409
       );
@@ -1906,25 +1691,17 @@ async function updateBooking(request, db, id) {
     .map(item => `${item.column} = ?`)
     .join(", ");
 
-  const values = updates.map(
-    item => item.value
-  );
-
   const result = await db.prepare(
     `UPDATE bookings
-     SET ${setClause},
-         updated_at = CURRENT_TIMESTAMP
+     SET ${setClause}, updated_at = CURRENT_TIMESTAMP
      WHERE id = ?`
   ).bind(
-    ...values,
+    ...updates.map(item => item.value),
     id
   ).run();
 
   if (!result.meta.changes) {
-    return json(
-      { error: "Не удалось обновить запись" },
-      400
-    );
+    return json({ error: "Не удалось обновить запись" }, 400);
   }
 
   return json({
@@ -1934,45 +1711,27 @@ async function updateBooking(request, db, id) {
   });
 }
 
-// ------------------------------
+// --------------------------------
 // Главный обработчик API
-// ------------------------------
+// --------------------------------
 
 async function handleRequest(request, env) {
   if (!env.DB) {
-    return json(
-      { error: "База данных DB не подключена" },
-      500
-    );
+    return json({ error: "База данных DB не подключена" }, 500);
   }
 
   const url = new URL(request.url);
-
-  const route =
-    url.pathname.replace(/\/+$/, "") || "/";
-
+  const route = url.pathname.replace(/\/+$/, "") || "/";
   const method = request.method;
   const db = env.DB;
 
-  // --------------------------
   // Вход владельца
-  // --------------------------
-
-  if (
-    route === "/api/login" &&
-    method === "POST"
-  ) {
+  if (route === "/api/login" && method === "POST") {
     if (!validOrigin(request)) {
-      return json(
-        { error: "Запрос отклонён" },
-        403
-      );
+      return json({ error: "Запрос отклонён" }, 403);
     }
 
-    if (
-      !env.ADMIN_PASSWORD ||
-      !env.SESSION_SECRET
-    ) {
+    if (!env.ADMIN_PASSWORD || !env.SESSION_SECRET) {
       return json(
         { error: "Не настроены секреты администратора" },
         500
@@ -1984,225 +1743,113 @@ async function handleRequest(request, env) {
     try {
       body = await readBody(request);
     } catch {
-      return json(
-        { error: "Некорректный запрос" },
-        400
-      );
+      return json({ error: "Некорректный запрос" }, 400);
     }
 
     if (
       typeof body.password !== "string" ||
       body.password.length > 200
     ) {
-      return json(
-        { error: "Неверный пароль" },
-        401
-      );
+      return json({ error: "Неверный пароль" }, 401);
     }
 
     if (body.password !== env.ADMIN_PASSWORD) {
-      return json(
-        { error: "Неверный пароль" },
-        401
-      );
+      return json({ error: "Неверный пароль" }, 401);
     }
 
-    const token = await createSession(
-      env.SESSION_SECRET
-    );
+    const token = await createSession(env.SESSION_SECRET);
 
     return json(
       { success: true },
       200,
-      {
-        "Set-Cookie": sessionCookie(token)
-      }
+      { "Set-Cookie": sessionCookie(token) }
     );
   }
 
-  // --------------------------
   // Выход владельца
-  // --------------------------
-
-  if (
-    route === "/api/logout" &&
-    method === "POST"
-  ) {
+  if (route === "/api/logout" && method === "POST") {
     if (!validOrigin(request)) {
-      return json(
-        { error: "Запрос отклонён" },
-        403
-      );
+      return json({ error: "Запрос отклонён" }, 403);
     }
 
     return json(
       { success: true },
       200,
-      {
-        "Set-Cookie": clearSessionCookie()
-      }
+      { "Set-Cookie": clearSessionCookie() }
     );
   }
 
-  // --------------------------
   // Проверка авторизации
-  // --------------------------
-
-  if (
-    route === "/api/me" &&
-    method === "GET"
-  ) {
-    const authenticated = await requireOwner(
-      request,
-      env
-    );
-
+  if (route === "/api/me" && method === "GET") {
+    const authenticated = await requireOwner(request, env);
     return json({ authenticated });
   }
 
-  // --------------------------
-  // Публичные данные сайта
-  // --------------------------
-
-  if (
-    route === "/api/site" &&
-    method === "GET"
-  ) {
-    return json(
-      await getPublicData(db)
-    );
+  // Публичные данные
+  if (route === "/api/site" && method === "GET") {
+    return json(await getPublicData(db));
   }
 
-  // --------------------------
-  // Публичное расписание
-  // --------------------------
-
-  if (
-    route === "/api/availability" &&
-    method === "GET"
-  ) {
+  // Свободное время
+  if (route === "/api/availability" && method === "GET") {
     return getPublicAvailability(request, db);
   }
 
-  // --------------------------
-  // Публичная форма записи
-  // --------------------------
-
-  if (
-    route === "/api/bookings" &&
-    method === "POST"
-  ) {
-    return createPublicBooking(
-      request,
-      db
-    );
+  // Публичная запись
+  if (route === "/api/bookings" && method === "POST") {
+    return createPublicBooking(request, db);
   }
 
-  // --------------------------
-  // Административные маршруты
-  // --------------------------
-
+  // Все остальные маршруты требуют авторизации
   if (!route.startsWith("/api/admin/")) {
-    return json(
-      { error: "Маршрут не найден" },
-      404
-    );
+    return json({ error: "Маршрут не найден" }, 404);
   }
 
-  const authenticated = await requireOwner(
-    request,
-    env
-  );
+  const authenticated = await requireOwner(request, env);
 
   if (!authenticated) {
-    return json(
-      { error: "Необходим вход" },
-      401
-    );
+    return json({ error: "Необходим вход" }, 401);
   }
 
-  if (
-    method !== "GET" &&
-    !validOrigin(request)
-  ) {
-    return json(
-      { error: "Запрос отклонён" },
-      403
-    );
+  if (method !== "GET" && !validOrigin(request)) {
+    return json({ error: "Запрос отклонён" }, 403);
   }
 
-  // --------------------------
   // Настройки
-  // --------------------------
-
   if (route === "/api/admin/settings") {
-    return handleSettings(
-      request,
-      db,
-      method
-    );
+    return handleSettings(request, db, method);
   }
 
-  // --------------------------
   // Услуги
-  // --------------------------
-
   if (
     route === "/api/admin/services" ||
     /^\/api\/admin\/services\/\d+$/.test(route)
   ) {
-    return handleServices(
-      request,
-      db,
-      route,
-      method
-    );
+    return handleServices(request, db, route, method);
   }
 
-  // --------------------------
   // Команда
-  // --------------------------
-
   if (
     route === "/api/admin/staff" ||
     /^\/api\/admin\/staff\/\d+$/.test(route)
   ) {
-    return handleStaff(
-      request,
-      db,
-      route,
-      method
-    );
+    return handleStaff(request, db, route, method);
   }
 
-  // --------------------------
-  // Записи клиентов
-  // --------------------------
-
+  // Все записи
   if (route === "/api/admin/bookings") {
     if (method === "GET") {
-      return json(
-        await getBookings(db)
-      );
+      return json(await getBookings(db));
     }
 
     if (method === "POST") {
-      return createAdminBooking(
-        request,
-        db
-      );
+      return createAdminBooking(request, db);
     }
 
-    return json(
-      { error: "Метод не поддерживается" },
-      405
-    );
+    return json({ error: "Метод не поддерживается" }, 405);
   }
 
-  // --------------------------
   // Отдельная запись
-  // --------------------------
-
   const bookingMatch = route.match(
     /^\/api\/admin\/bookings\/(\d+)$/
   );
@@ -2219,10 +1866,7 @@ async function handleRequest(request, env) {
       ).bind(id).run();
 
       if (!result.meta.changes) {
-        return json(
-          { error: "Запись не найдена" },
-          404
-        );
+        return json({ error: "Запись не найдена" }, 404);
       }
 
       return json({
@@ -2233,28 +1877,18 @@ async function handleRequest(request, env) {
     }
 
     if (method === "PUT") {
-      return updateBooking(
-        request,
-        db,
-        id
-      );
+      return updateBooking(request, db, id);
     }
 
-    return json(
-      { error: "Метод не поддерживается" },
-      405
-    );
+    return json({ error: "Метод не поддерживается" }, 405);
   }
 
-  return json(
-    { error: "Маршрут не найден" },
-    404
-  );
+  return json({ error: "Маршрут не найден" }, 404);
 }
 
-// ------------------------------
+// --------------------------------
 // Cloudflare Pages Function
-// ------------------------------
+// --------------------------------
 
 export async function onRequest(context) {
   try {
@@ -2262,17 +1896,11 @@ export async function onRequest(context) {
       context.request,
       context.env
     );
-
   } catch (error) {
-    console.error(
-      "FINESSSIM API error:",
-      error
-    );
+    console.error("FINESSSIM API error:", error);
 
     return json(
-      {
-        error: "Внутренняя ошибка сервера"
-      },
+      { error: "Внутренняя ошибка сервера" },
       500
     );
   }
