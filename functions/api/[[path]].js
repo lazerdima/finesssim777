@@ -1,4 +1,3 @@
-
 const json = (data, status = 200, extraHeaders = {}) =>
   new Response(JSON.stringify(data), {
     status,
@@ -12,7 +11,6 @@ const json = (data, status = 200, extraHeaders = {}) =>
 const encoder = new TextEncoder();
 const COOKIE_NAME = "finesssim_session";
 const SESSION_SECONDS = 60 * 60 * 24 * 7;
-const MAX_FINANCE_AMOUNT = 10000000;
 
 const BOOKING_STATUSES = [
   "new",
@@ -26,17 +24,14 @@ const SETTING_KEYS = [
   "telegram", "whatsapp", "instagram", "vk", "map_url",
   "working_hours", "working_days",
   "working_start", "working_end", "slot_interval",
-
   "hero_eyebrow", "hero_title", "hero_subtitle", "hero_image",
   "intro_eyebrow", "intro_title", "intro_text", "intro_button",
   "services_eyebrow", "services_title", "services_text",
   "about_eyebrow", "about_title", "about_text", "about_image",
-
   "about_point_1_title", "about_point_1_text",
   "about_point_2_title", "about_point_2_text",
   "about_point_3_title", "about_point_3_text",
   "about_point_4_title", "about_point_4_text",
-
   "staff_eyebrow", "staff_title", "staff_text",
   "manifesto_title", "manifesto_text",
   "booking_eyebrow", "booking_title", "booking_text",
@@ -50,9 +45,9 @@ const DEFAULT_SCHEDULE = {
   slot_interval: "15"
 };
 
-// --------------------------------
-// Общие функции
-// --------------------------------
+// ================================================
+// ОБЩИЕ ФУНКЦИИ
+// ================================================
 
 function base64url(bytes) {
   let binary = "";
@@ -98,7 +93,6 @@ function safeText(value, maxLength = 500) {
 
 function validOrigin(request) {
   const origin = request.headers.get("Origin");
-
   return !origin || origin === new URL(request.url).origin;
 }
 
@@ -185,38 +179,38 @@ function validBookingDate(value) {
   );
 }
 
-function validMoney(value) {
-  const amount = Number(value);
+// ================================================
+// МОСКОВСКОЕ ВРЕМЯ
+// ================================================
+
+function getMoscowDateTime() {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Moscow",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23"
+  }).formatToParts(new Date());
+
+  const values = Object.fromEntries(
+    parts.map(part => [part.type, part.value])
+  );
 
   return (
-    Number.isInteger(amount) &&
-    amount > 0 &&
-    amount <= MAX_FINANCE_AMOUNT
+    `${values.year}-${values.month}-${values.day}` +
+    `T${values.hour}:${values.minute}`
   );
-}
-
-function parseServicePrice(value) {
-  if (value === null || value === undefined) return null;
-
-  const normalized = String(value)
-    .trim()
-    .replace(/\s/g, "")
-    .replace(/₽/g, "");
-
-  if (!/^\d+$/.test(normalized)) return null;
-
-  const amount = Number(normalized);
-
-  return validMoney(amount) ? amount : null;
 }
 
 function getMoscowDate() {
   return getMoscowDateTime().slice(0, 10);
 }
 
-// --------------------------------
-// Telegram-уведомления
-// --------------------------------
+// ================================================
+// TELEGRAM
+// ================================================
 
 function escapeTelegramHTML(value) {
   return String(value ?? "")
@@ -273,24 +267,20 @@ async function sendTelegramBookingNotification(env, booking) {
     );
 
     if (!response.ok) {
-      console.error(
-        "Telegram notification failed:",
-        response.status
-      );
+      console.error("Telegram notification failed:", response.status);
       return false;
     }
 
     return true;
-
   } catch (error) {
     console.error("Telegram notification error:", error);
     return false;
   }
 }
 
-// --------------------------------
-// Авторизация владельца
-// --------------------------------
+// ================================================
+// АВТОРИЗАЦИЯ ВЛАДЕЛЬЦА
+// ================================================
 
 async function createSession(secret) {
   const payload = base64url(
@@ -373,30 +363,9 @@ async function requireOwner(request, env) {
   return verifySession(request, env.SESSION_SECRET);
 }
 
-// --------------------------------
-// Московское время и расписание
-// --------------------------------
-
-function getMoscowDateTime() {
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/Moscow",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23"
-  }).formatToParts(new Date());
-
-  const values = Object.fromEntries(
-    parts.map(part => [part.type, part.value])
-  );
-
-  return (
-    `${values.year}-${values.month}-${values.day}` +
-    `T${values.hour}:${values.minute}`
-  );
-}
+// ================================================
+// РАСПИСАНИЕ
+// ================================================
 
 function getWorkingSchedule(settings = {}) {
   const daysRaw = String(
@@ -505,9 +474,168 @@ function isWorkingAppointment(appointmentAt, duration, schedule) {
   );
 }
 
-// --------------------------------
-// Работа с базой данных
-// --------------------------------
+// ================================================
+// ФИНАНСЫ: ОБЩИЕ ФУНКЦИИ
+// ================================================
+
+// Суммы хранятся в целых рублях.
+// Допускаются значения вроде "777", "1 500", "1500 ₽".
+
+function parseRubles(value) {
+  if (typeof value === "number") {
+    if (
+      Number.isSafeInteger(value) &&
+      value > 0 &&
+      value <= 10000000
+    ) {
+      return value;
+    }
+
+    return null;
+  }
+
+  if (typeof value !== "string") return null;
+
+  const cleaned = value
+    .trim()
+    .replace(/\s/g, "")
+    .replace(/₽/g, "")
+    .replace(/руб\.?/gi, "");
+
+  if (!/^\d+$/.test(cleaned)) return null;
+
+  const amount = Number(cleaned);
+
+  if (
+    !Number.isSafeInteger(amount) ||
+    amount <= 0 ||
+    amount > 10000000
+  ) {
+    return null;
+  }
+
+  return amount;
+}
+
+function validFinancePeriod(from, to) {
+  if (!validBookingDate(from) || !validBookingDate(to)) {
+    return false;
+  }
+
+  return from <= to;
+}
+
+async function getBookingPrice(db, booking) {
+  let service = null;
+
+  if (booking.service_id) {
+    service = await db.prepare(
+      "SELECT price FROM services WHERE id = ?"
+    ).bind(booking.service_id).first();
+  }
+
+  if (!service && booking.service) {
+    service = await db.prepare(
+      `SELECT price
+       FROM services
+       WHERE LOWER(TRIM(title)) = LOWER(TRIM(?))
+       LIMIT 1`
+    ).bind(booking.service).first();
+  }
+
+  return parseRubles(service?.price);
+}
+
+async function getBookingNetIncome(db, bookingId) {
+  const result = await db.prepare(
+    `SELECT
+       COALESCE(SUM(
+         CASE
+           WHEN type = 'income' THEN amount
+           WHEN type = 'income_reversal' THEN -amount
+           ELSE 0
+         END
+       ), 0) AS net
+     FROM finance_transactions
+     WHERE booking_id = ?`
+  ).bind(bookingId).first();
+
+  return Number(result?.net || 0);
+}
+
+async function addBookingIncome(db, booking, amount, eventKey) {
+  return db.prepare(
+    `INSERT INTO finance_transactions (
+       type,
+       amount,
+       category,
+       description,
+       booking_id,
+       service_title,
+       client_name,
+       transaction_date,
+       event_key
+     )
+     VALUES (
+       'income',
+       ?,
+       'Услуги клиники',
+       ?,
+       ?,
+       ?,
+       ?,
+       ?,
+       ?
+     )`
+  ).bind(
+    amount,
+    `Оплата услуги: ${booking.service || "Стоматологическая услуга"}`,
+    booking.id,
+    booking.service || "",
+    booking.client_name || "",
+    getMoscowDate(),
+    eventKey
+  );
+}
+
+async function addIncomeReversal(db, booking, amount, eventKey) {
+  return db.prepare(
+    `INSERT INTO finance_transactions (
+       type,
+       amount,
+       category,
+       description,
+       booking_id,
+       service_title,
+       client_name,
+       transaction_date,
+       event_key
+     )
+     VALUES (
+       'income_reversal',
+       ?,
+       'Корректировка дохода',
+       ?,
+       ?,
+       ?,
+       ?,
+       ?,
+       ?
+     )`
+  ).bind(
+    amount,
+    `Сторнирование дохода по записи №${booking.id}`,
+    booking.id,
+    booking.service || "",
+    booking.client_name || "",
+    getMoscowDate(),
+    eventKey
+  );
+}
+
+// ================================================
+// БАЗА ДАННЫХ
+// ================================================
 
 async function getSettings(db) {
   const result = await db.prepare(
@@ -560,9 +688,9 @@ async function getServiceDuration(db, serviceId, serviceName) {
     : 60;
 }
 
-// --------------------------------
-// Проверка занятости специалиста
-// --------------------------------
+// ================================================
+// ПРОВЕРКА ЗАНЯТОСТИ СПЕЦИАЛИСТА
+// ================================================
 
 async function hasStaffConflict(
   db,
@@ -609,9 +737,9 @@ async function hasStaffConflict(
   return Boolean(conflict);
 }
 
-// --------------------------------
-// Свободное время
-// --------------------------------
+// ================================================
+// СВОБОДНОЕ ВРЕМЯ
+// ================================================
 
 async function getAvailableSlots(
   db,
@@ -713,9 +841,9 @@ async function getPublicAvailability(request, db) {
   return json({ slots });
 }
 
-// --------------------------------
-// Публичные данные сайта
-// --------------------------------
+// ================================================
+// ПУБЛИЧНЫЕ ДАННЫЕ САЙТА
+// ================================================
 
 async function getPublicData(db) {
   const [settings, services, staff] = await Promise.all([
@@ -747,9 +875,9 @@ async function getPublicData(db) {
   };
 }
 
-// --------------------------------
-// Публичная запись
-// --------------------------------
+// ================================================
+// ПУБЛИЧНАЯ ЗАПИСЬ
+// ================================================
 
 async function createPublicBooking(request, db, env) {
   if (!validOrigin(request)) {
@@ -917,9 +1045,9 @@ async function createPublicBooking(request, db, env) {
   );
 }
 
-// --------------------------------
-// Настройки сайта
-// --------------------------------
+// ================================================
+// НАСТРОЙКИ САЙТА
+// ================================================
 
 function validateScheduleInput(body, currentSettings) {
   const candidate = {
@@ -1075,9 +1203,9 @@ async function handleSettings(request, db, method) {
   });
 }
 
-// --------------------------------
-// Управление услугами
-// --------------------------------
+// ================================================
+// УПРАВЛЕНИЕ УСЛУГАМИ
+// ================================================
 
 async function handleServices(request, db, route, method) {
   if (route === "/api/admin/services") {
@@ -1253,9 +1381,9 @@ async function handleServices(request, db, route, method) {
   return json({ success: true, changes: result.meta.changes });
 }
 
-// --------------------------------
-// Управление командой
-// --------------------------------
+// ================================================
+// УПРАВЛЕНИЕ КОМАНДОЙ
+// ================================================
 
 async function handleStaff(request, db, route, method) {
   if (route === "/api/admin/staff") {
@@ -1404,9 +1532,9 @@ async function handleStaff(request, db, route, method) {
   return json({ success: true, changes: result.meta.changes });
 }
 
-// --------------------------------
-// Получение записей
-// --------------------------------
+// ================================================
+// ПОЛУЧЕНИЕ ЗАПИСЕЙ
+// ================================================
 
 async function getBookings(db) {
   const result = await db.prepare(
@@ -1442,37 +1570,9 @@ async function getBookings(db) {
   return result.results || [];
 }
 
-// --------------------------------
-// Финансы: получение цены услуги
-// --------------------------------
-
-async function getBookingServicePrice(db, serviceId, serviceName) {
-  let service = null;
-
-  if (serviceId !== null && serviceId !== undefined) {
-    service = await db.prepare(
-      "SELECT title, price FROM services WHERE id = ?"
-    ).bind(serviceId).first();
-  }
-
-  if (!service && serviceName) {
-    service = await db.prepare(
-      `SELECT title, price
-       FROM services
-       WHERE LOWER(TRIM(title)) = LOWER(TRIM(?))
-       LIMIT 1`
-    ).bind(serviceName).first();
-  }
-
-  return {
-    title: service?.title || serviceName || "Услуга",
-    amount: parseServicePrice(service?.price)
-  };
-}
-
-// --------------------------------
-// Создание записи владельцем
-// --------------------------------
+// ================================================
+// СОЗДАНИЕ ЗАПИСИ ВЛАДЕЛЬЦЕМ
+// ================================================
 
 async function createAdminBooking(request, db) {
   let body;
@@ -1503,18 +1603,6 @@ async function createAdminBooking(request, db) {
     return json(
       {
         error: "Проверьте имя, телефон, услугу, дату и время записи"
-      },
-      400
-    );
-  }
-
-  // Завершённую запись создаём через обычную запись,
-  // а затем переводим её в статус «Завершена».
-  // Так доход всегда проходит через финансовый учёт.
-  if (status === "completed") {
-    return json(
-      {
-        error: "Сначала создайте запись, затем переведите её в статус «Завершена»."
       },
       400
     );
@@ -1611,6 +1699,23 @@ async function createAdminBooking(request, db) {
     }
   }
 
+  let incomeAmount = null;
+
+  if (status === "completed") {
+    incomeAmount = body.income_amount !== undefined
+      ? parseRubles(body.income_amount)
+      : null;
+
+    if (incomeAmount === null) {
+      return json(
+        {
+          error: "Для создания завершённой записи укажите income_amount — сумму оплаты в рублях."
+        },
+        400
+      );
+    }
+  }
+
   const result = await db.prepare(
     `INSERT INTO bookings (
       client_name, phone, service, message, status,
@@ -1629,15 +1734,38 @@ async function createAdminBooking(request, db) {
     notes
   ).run();
 
-  return json(
-    { success: true, id: result.meta.last_row_id },
-    201
-  );
+  const bookingId = result.meta.last_row_id;
+
+  if (status === "completed") {
+    const eventKey = `booking:${bookingId}:initial-income:${crypto.randomUUID()}`;
+
+    await db.prepare(
+      `INSERT INTO finance_transactions (
+        type, amount, category, description,
+        booking_id, service_title, client_name,
+        transaction_date, event_key
+      )
+      VALUES (
+        'income', ?, 'Услуги клиники', ?,
+        ?, ?, ?, ?, ?
+      )`
+    ).bind(
+      incomeAmount,
+      `Оплата услуги: ${serviceName}`,
+      bookingId,
+      serviceName,
+      clientName,
+      getMoscowDate(),
+      eventKey
+    ).run();
+  }
+
+  return json({ success: true, id: bookingId }, 201);
 }
 
-// --------------------------------
-// Обновление записи и финансов
-// --------------------------------
+// ================================================
+// ОБНОВЛЕНИЕ ЗАПИСИ И ФИНАНСОВЫЕ СОБЫТИЯ
+// ================================================
 
 async function updateBooking(request, db, id) {
   let body;
@@ -1841,292 +1969,235 @@ async function updateBooking(request, db, id) {
   }
 
   const statusChanged = nextStatus !== current.status;
-  const completing = statusChanged && nextStatus === "completed";
-  const reversing = statusChanged &&
-    current.status === "completed" &&
-    nextStatus !== "completed";
 
+  // Если запись переводится в завершённые — определяем сумму.
   let incomeAmount = null;
-  let serviceTitleForFinance = nextServiceName;
 
-  if (completing) {
-    if (body.income_amount !== undefined && body.income_amount !== "") {
-      if (!validMoney(body.income_amount)) {
-        return json(
-          { error: "Сумма дохода должна быть целым числом от 1 до 10 000 000 рублей." },
-          400
-        );
-      }
-
-      incomeAmount = Number(body.income_amount);
-
+  if (statusChanged && nextStatus === "completed") {
+    if (body.income_amount !== undefined) {
+      incomeAmount = parseRubles(body.income_amount);
     } else {
-      const price = await getBookingServicePrice(
-        db,
-        nextServiceId,
-        nextServiceName
-      );
-
-      incomeAmount = price.amount;
-      serviceTitleForFinance = price.title;
+      incomeAmount = await getBookingPrice(db, {
+        service_id: nextServiceId,
+        service: nextServiceName
+      });
     }
 
     if (incomeAmount === null) {
       return json(
         {
-          error: "У этой услуги не указана числовая цена. Перед завершением записи укажите сумму дохода в поле income_amount."
+          error: "У этой услуги не указана корректная цена. Введите сумму оплаты в поле income_amount."
         },
         400
       );
     }
   }
 
+  // Если запись была завершена, но статус меняется —
+  // рассчитываем сумму, которую нужно сторнировать.
+  let reversalAmount = 0;
+
+  if (statusChanged && current.status === "completed" && nextStatus !== "completed") {
+    reversalAmount = await getBookingNetIncome(db, id);
+  }
+
   const setClause = updates
     .map(item => `${item.column} = ?`)
     .join(", ");
 
-  if (statusChanged) {
-    // Уникальный маркер позволяет связать обновление записи
-    // с финансовой операцией в одной транзакции D1.
-    const transitionMarker =
-      new Date().toISOString() + "#" + crypto.randomUUID();
+  // Уникальная метка защищает от повторной обработки одного изменения.
+  const transitionMarker = `${new Date().toISOString()}-${crypto.randomUUID()}`;
 
-    const eventKey = crypto.randomUUID();
-
-    const updateStatement = db.prepare(
-      `UPDATE bookings
+  const updateSql = statusChanged
+    ? `UPDATE bookings
        SET ${setClause}, updated_at = ?
        WHERE id = ? AND status = ?`
-    ).bind(
-      ...updates.map(item => item.value),
-      transitionMarker,
-      id,
-      current.status
-    );
-
-    let financeStatement = null;
-
-    if (completing) {
-      financeStatement = db.prepare(
-        `INSERT INTO finance_transactions (
-          type, amount, category, description,
-          booking_id, service_title, client_name,
-          transaction_date, event_key
-        )
-        SELECT
-          'income', ?, 'Услуги',
-          'Оплата завершённой записи №' || ?,
-          ?, ?, ?, ?, ?
-        WHERE EXISTS (
-          SELECT 1
-          FROM bookings
-          WHERE id = ?
-            AND status = 'completed'
-            AND updated_at = ?
-        )
-        AND NOT EXISTS (
-          SELECT 1
-          FROM finance_transactions
-          WHERE event_key = ?
-        )`
-      ).bind(
-        incomeAmount,
-        id,
-        id,
-        serviceTitleForFinance,
-        current.client_name,
-        getMoscowDate(),
-        eventKey,
-        id,
-        transitionMarker,
-        eventKey
-      );
-
-    } else if (reversing) {
-      financeStatement = db.prepare(
-        `INSERT INTO finance_transactions (
-          type, amount, category, description,
-          booking_id, service_title, client_name,
-          transaction_date, event_key
-        )
-        SELECT
-          'income_reversal',
-          net.amount,
-          'Корректировка',
-          'Отмена дохода по записи №' || ?,
-          ?, ?, ?, ?, ?
-        FROM (
-          SELECT CAST(
-            SUM(
-              CASE
-                WHEN type = 'income' THEN amount
-                WHEN type = 'income_reversal' THEN -amount
-                ELSE 0
-              END
-            ) AS INTEGER
-          ) AS amount
-          FROM finance_transactions
-          WHERE booking_id = ?
-        ) net
-        WHERE net.amount > 0
-          AND EXISTS (
-            SELECT 1
-            FROM bookings
-            WHERE id = ?
-              AND status = ?
-              AND updated_at = ?
-          )
-          AND NOT EXISTS (
-            SELECT 1
-            FROM finance_transactions
-            WHERE event_key = ?
-          )`
-      ).bind(
-        id,
-        id,
-        serviceTitleForFinance,
-        current.client_name,
-        getMoscowDate(),
-        eventKey,
-        id,
-        id,
-        nextStatus,
-        transitionMarker,
-        eventKey
-      );
-    }
-
-    const statements = financeStatement
-      ? [updateStatement, financeStatement]
-      : [updateStatement];
-
-    const results = await db.batch(statements);
-
-    if (!results[0]?.meta?.changes) {
-      return json(
-        {
-          error: "Запись уже была изменена. Обновите страницу и попробуйте снова."
-        },
-        409
-      );
-    }
-
-    if (
-      financeStatement &&
-      completing &&
-      !results[1]?.meta?.changes
-    ) {
-      throw new Error(
-        "Не удалось сохранить доход по завершённой записи"
-      );
-    }
-
-  } else {
-    const result = await db.prepare(
-      `UPDATE bookings
+    : `UPDATE bookings
        SET ${setClause}, updated_at = CURRENT_TIMESTAMP
-       WHERE id = ?`
-    ).bind(
-      ...updates.map(item => item.value),
-      id
-    ).run();
+       WHERE id = ?`;
+
+  const updateStatement = statusChanged
+    ? db.prepare(updateSql).bind(
+        ...updates.map(item => item.value),
+        transitionMarker,
+        id,
+        current.status
+      )
+    : db.prepare(updateSql).bind(
+        ...updates.map(item => item.value),
+        id
+      );
+
+  if (!statusChanged) {
+    const result = await updateStatement.run();
 
     if (!result.meta.changes) {
       return json({ error: "Не удалось обновить запись" }, 400);
     }
+
+    return json({
+      success: true,
+      id,
+      changes: result.meta.changes
+    });
+  }
+
+  const statements = [updateStatement];
+
+  if (nextStatus === "completed") {
+    const eventKey = `booking:${id}:income:${transitionMarker}`;
+
+    statements.push(
+      db.prepare(
+        `INSERT INTO finance_transactions (
+          type, amount, category, description,
+          booking_id, service_title, client_name,
+          transaction_date, event_key
+        )
+        SELECT
+          'income', ?, 'Услуги клиники', ?,
+          ?, ?, ?, ?, ?
+        WHERE EXISTS (
+          SELECT 1
+          FROM bookings
+          WHERE id = ? AND status = 'completed' AND updated_at = ?
+        )`
+      ).bind(
+        incomeAmount,
+        `Оплата услуги: ${nextServiceName || "Стоматологическая услуга"}`,
+        id,
+        nextServiceName,
+        current.client_name,
+        getMoscowDate(),
+        eventKey,
+        id,
+        transitionMarker
+      )
+    );
+  }
+
+  if (
+    current.status === "completed" &&
+    nextStatus !== "completed" &&
+    reversalAmount > 0
+  ) {
+    const eventKey = `booking:${id}:reversal:${transitionMarker}`;
+
+    statements.push(
+      db.prepare(
+        `INSERT INTO finance_transactions (
+          type, amount, category, description,
+          booking_id, service_title, client_name,
+          transaction_date, event_key
+        )
+        SELECT
+          'income_reversal', ?, 'Корректировка дохода', ?,
+          ?, ?, ?, ?, ?
+        WHERE EXISTS (
+          SELECT 1
+          FROM bookings
+          WHERE id = ? AND status = ? AND updated_at = ?
+        )`
+      ).bind(
+        reversalAmount,
+        `Сторнирование дохода по записи №${id}`,
+        id,
+        current.service || "",
+        current.client_name,
+        getMoscowDate(),
+        eventKey,
+        id,
+        nextStatus,
+        transitionMarker
+      )
+    );
+  }
+
+  const results = await db.batch(statements);
+  const updateResult = results[0];
+
+  if (!updateResult?.meta?.changes) {
+    return json(
+      {
+        error: "Запись уже была изменена. Обновите страницу и повторите действие."
+      },
+      409
+    );
   }
 
   return json({
     success: true,
     id,
-    changes: updates.length
+    changes: updateResult.meta.changes
   });
 }
 
-// --------------------------------
-// Финансы: получение статистики
-// --------------------------------
+// ================================================
+// ФИНАНСЫ: ПОЛУЧЕНИЕ СВОДКИ И ИСТОРИИ
+// ================================================
 
 async function getFinance(request, db) {
   const url = new URL(request.url);
 
-  let from = url.searchParams.get("from");
-  let to = url.searchParams.get("to");
+  const defaultTo = getMoscowDate();
+  const defaultFrom = `${defaultTo.slice(0, 7)}-01`;
 
-  if (!from && !to) {
-    const today = getMoscowDate();
-    from = today.slice(0, 7) + "-01";
-    to = today;
-  } else if (!validBookingDate(from) || !validBookingDate(to)) {
+  const from = url.searchParams.get("from") || defaultFrom;
+  const to = url.searchParams.get("to") || defaultTo;
+
+  if (!validFinancePeriod(from, to)) {
     return json(
       { error: "Укажите корректный период в формате ГГГГ-ММ-ДД" },
       400
     );
   }
 
-  if (!validBookingDate(from) || !validBookingDate(to) || from > to) {
-    return json(
-      { error: "Дата начала периода не может быть позже даты окончания" },
-      400
-    );
-  }
+  const summary = await db.prepare(
+    `SELECT
+       COALESCE(SUM(
+         CASE
+           WHEN type = 'income' THEN amount
+           WHEN type = 'income_reversal' THEN -amount
+           ELSE 0
+         END
+       ), 0) AS income,
 
-  const [summary, transactions] = await Promise.all([
-    db.prepare(
-      `SELECT
-        COALESCE(
-          SUM(
-            CASE
-              WHEN type = 'income' THEN amount
-              WHEN type = 'income_reversal' THEN -amount
-              ELSE 0
-            END
-          ),
-          0
-        ) AS income,
+       COALESCE(SUM(
+         CASE
+           WHEN type = 'expense' THEN amount
+           ELSE 0
+         END
+       ), 0) AS expenses
 
-        COALESCE(
-          SUM(
-            CASE
-              WHEN type = 'expense' THEN amount
-              ELSE 0
-            END
-          ),
-          0
-        ) AS expenses
+     FROM finance_transactions
+     WHERE transaction_date >= ?
+       AND transaction_date <= ?`
+  ).bind(from, to).first();
 
-       FROM finance_transactions
-       WHERE transaction_date >= ?
-         AND transaction_date <= ?`
-    ).bind(from, to).first(),
-
-    db.prepare(
-      `SELECT
-        id,
-        type,
-        amount,
-        category,
-        description,
-        booking_id,
-        service_title,
-        client_name,
-        transaction_date,
-        created_at
-       FROM finance_transactions
-       WHERE transaction_date >= ?
-         AND transaction_date <= ?
-       ORDER BY transaction_date DESC, id DESC`
-    ).bind(from, to).all()
-  ]);
+  const transactions = await db.prepare(
+    `SELECT
+       id,
+       type,
+       amount,
+       category,
+       description,
+       booking_id,
+       service_title,
+       client_name,
+       transaction_date,
+       created_at
+     FROM finance_transactions
+     WHERE transaction_date >= ?
+       AND transaction_date <= ?
+     ORDER BY transaction_date DESC, id DESC`
+  ).bind(from, to).all();
 
   const income = Number(summary?.income || 0);
   const expenses = Number(summary?.expenses || 0);
 
   return json({
-    period: {
-      from,
-      to
-    },
+    from,
+    to,
     summary: {
       income,
       expenses,
@@ -2136,9 +2207,9 @@ async function getFinance(request, db) {
   });
 }
 
-// --------------------------------
-// Финансы: добавление расхода
-// --------------------------------
+// ================================================
+// ФИНАНСЫ: ДОБАВЛЕНИЕ РАСХОДА
+// ================================================
 
 async function createFinanceExpense(request, db) {
   let body;
@@ -2149,28 +2220,40 @@ async function createFinanceExpense(request, db) {
     return json({ error: "Некорректные данные" }, 400);
   }
 
-  const amount = Number(body.amount);
-  const category = safeText(body.category ?? "", 100);
+  const amount = parseRubles(body.amount);
+  const category = safeText(body.category, 100);
   const description = safeText(body.description ?? "", 1000);
+  const date = body.transaction_date || getMoscowDate();
 
-  const transactionDate = body.transaction_date || getMoscowDate();
-
-  if (
-    !validMoney(amount) ||
-    !category ||
-    category.length < 2 ||
-    description === null ||
-    !validBookingDate(transactionDate)
-  ) {
+  if (!amount) {
     return json(
-      {
-        error: "Укажите корректную сумму, категорию, описание и дату расхода."
-      },
+      { error: "Укажите корректную сумму расхода в рублях" },
       400
     );
   }
 
-  const eventKey = crypto.randomUUID();
+  if (!category || category.length < 2) {
+    return json(
+      { error: "Укажите категорию расхода" },
+      400
+    );
+  }
+
+  if (description === null) {
+    return json(
+      { error: "Комментарий слишком длинный" },
+      400
+    );
+  }
+
+  if (!validBookingDate(date)) {
+    return json(
+      { error: "Укажите корректную дату расхода" },
+      400
+    );
+  }
+
+  const eventKey = `expense:${crypto.randomUUID()}`;
 
   const result = await db.prepare(
     `INSERT INTO finance_transactions (
@@ -2178,28 +2261,17 @@ async function createFinanceExpense(request, db) {
       amount,
       category,
       description,
-      booking_id,
-      service_title,
-      client_name,
       transaction_date,
       event_key
     )
     VALUES (
-      'expense',
-      ?,
-      ?,
-      ?,
-      NULL,
-      '',
-      '',
-      ?,
-      ?
+      'expense', ?, ?, ?, ?, ?
     )`
   ).bind(
     amount,
     category,
     description,
-    transactionDate,
+    date,
     eventKey
   ).run();
 
@@ -2212,9 +2284,9 @@ async function createFinanceExpense(request, db) {
   );
 }
 
-// --------------------------------
-// Главный обработчик API
-// --------------------------------
+// ================================================
+// ГЛАВНЫЙ ОБРАБОТЧИК API
+// ================================================
 
 async function handleRequest(request, env) {
   if (!env.DB) {
@@ -2301,7 +2373,7 @@ async function handleRequest(request, env) {
     return createPublicBooking(request, db, env);
   }
 
-  // Все остальные маршруты требуют авторизации
+  // Остальные маршруты требуют авторизации
   if (!route.startsWith("/api/admin/")) {
     return json({ error: "Маршрут не найден" }, 404);
   }
@@ -2337,21 +2409,19 @@ async function handleRequest(request, env) {
     return handleStaff(request, db, route, method);
   }
 
-  // Финансы
-  if (route === "/api/admin/finance") {
-    if (method === "GET") {
-      return getFinance(request, db);
-    }
+  // ==============================================
+  // ФИНАНСЫ
+  // ==============================================
 
-    return json({ error: "Метод не поддерживается" }, 405);
+  if (route === "/api/admin/finance" && method === "GET") {
+    return getFinance(request, db);
   }
 
-  if (route === "/api/admin/finance/expenses") {
-    if (method === "POST") {
-      return createFinanceExpense(request, db);
-    }
-
-    return json({ error: "Метод не поддерживается" }, 405);
+  if (
+    route === "/api/admin/finance/expenses" &&
+    method === "POST"
+  ) {
+    return createFinanceExpense(request, db);
   }
 
   // Все записи
@@ -2376,19 +2446,18 @@ async function handleRequest(request, env) {
     const id = Number(bookingMatch[1]);
 
     if (method === "DELETE") {
-      // Используем общий механизм обновления статуса,
-      // чтобы при отмене завершённой записи скорректировать доход.
-      const cancelRequest = new Request(request.url, {
+      // Удаление из интерфейса фактически отменяет запись.
+      // Если она была завершена, updateBooking создаст сторно дохода.
+      const syntheticRequest = new Request(request.url, {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "Origin": new URL(request.url).origin
         },
-        body: JSON.stringify({
-          status: "cancelled"
-        })
+        body: JSON.stringify({ status: "cancelled" })
       });
 
-      return updateBooking(cancelRequest, db, id);
+      return updateBooking(syntheticRequest, db, id);
     }
 
     if (method === "PUT") {
@@ -2401,9 +2470,9 @@ async function handleRequest(request, env) {
   return json({ error: "Маршрут не найден" }, 404);
 }
 
-// --------------------------------
-// Cloudflare Pages Function
-// --------------------------------
+// ================================================
+// CLOUDFLARE PAGES FUNCTION
+// ================================================
 
 export async function onRequest(context) {
   try {
