@@ -5,7 +5,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#f4f0e7">
-  <meta name="description" content="FINESSSIM Dental Studio — современная стоматология, эстетика улыбки и забота о здоровье зубов.">
+  <meta name="description" content="FINESSSIM Dental Studio — современная стоматология в Нижнем Новгороде. Запись на приём, услуги и забота о здоровье зубов.">
+  <meta property="og:title" content="FINESSSIM — Dental Studio">
+  <meta property="og:description" content="Современная стоматология в Нижнем Новгороде. Внимание к деталям и забота о вашей улыбке.">
+  <meta property="og:type" content="website">
   <title>FINESSSIM — Dental Studio</title>
 
   <style>
@@ -37,9 +40,7 @@
     }
 
     button, input, select, textarea { font: inherit; }
-
     a { color: inherit; text-decoration: none; }
-
     img { display: block; max-width: 100%; }
 
     .container {
@@ -283,7 +284,6 @@
     }
 
     .intro h2 { margin-top: 25px; }
-
     .intro-right { padding-bottom: 7px; }
 
     .intro-right p {
@@ -324,7 +324,6 @@
     }
 
     .services .eyebrow { color: var(--lime); }
-
     .services .section-description { color: rgba(255,255,255,.65); }
 
     .services-grid {
@@ -576,6 +575,39 @@
 
     .booking-detail strong { font-size: 14px; font-weight: 600; }
 
+    .booking-detail a {
+      transition: color .2s;
+    }
+
+    .booking-detail a:hover {
+      color: var(--orange);
+    }
+
+    .contact-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 5px;
+    }
+
+    .contact-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 18px;
+      border: 1px solid var(--border);
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 700;
+      transition: .25s ease;
+    }
+
+    .contact-link:hover {
+      background: var(--green);
+      color: var(--cream);
+    }
+
     .booking-form {
       padding: 42px;
       background: var(--white);
@@ -825,6 +857,11 @@
       .footer-top { flex-direction: column; }
       .footer-links { flex-wrap: wrap; gap: 35px; }
       .footer-bottom { flex-direction: column; }
+
+      .contact-links {
+        flex-direction: column;
+        align-items: stretch;
+      }
     }
   </style>
 </head>
@@ -848,6 +885,9 @@
       </nav>
 
       <div class="header-contact">
+        <a href="tel:+798407778899" class="header-phone">
+          +7 (984) 077-78-899
+        </a>
         <a href="#booking" class="header-book">Записаться</a>
       </div>
 
@@ -1030,18 +1070,63 @@
         </p>
 
         <div class="booking-details">
+
+          <div class="booking-detail">
+            <span>Адрес</span>
+            <strong>г. Нижний Новгород, ул. Малые Озёра, 14</strong>
+          </div>
+
+          <div class="booking-detail">
+            <span>Телефон</span>
+            <strong>
+              <a href="tel:+798407778899">+7 (984) 077-78-899</a>
+            </strong>
+          </div>
+
+          <div class="booking-detail">
+            <span>Telegram</span>
+            <strong>
+              <a href="https://t.me/finesssim777" target="_blank" rel="noopener noreferrer">
+                @finesssim777
+              </a>
+            </strong>
+          </div>
+
           <div class="booking-detail">
             <span>График работы</span>
             <strong>Понедельник — пятница · 09:00–18:00</strong>
           </div>
+
           <div class="booking-detail">
             <span>Выходные</span>
-            <strong>Суббота и воскресенье · выходные</strong>
+            <strong>Суббота и воскресенье · 10:00–15:00</strong>
           </div>
+
           <div class="booking-detail">
             <span>Формат</span>
             <strong>Предварительная запись</strong>
           </div>
+
+          <div class="contact-links">
+            <a class="contact-link" href="tel:+798407778899">
+              Позвонить ↗
+            </a>
+
+            <a class="contact-link"
+               href="https://t.me/finesssim777"
+               target="_blank"
+               rel="noopener noreferrer">
+              Написать в Telegram ↗
+            </a>
+
+            <a class="contact-link"
+               href="https://www.google.com/maps/search/?api=1&query=ул.+Малые+Озёра,+14,+Нижний+Новгород"
+               target="_blank"
+               rel="noopener noreferrer">
+              Найти на карте ↗
+            </a>
+          </div>
+
         </div>
       </div>
 
@@ -1193,9 +1278,25 @@
 
           <div class="footer-column">
             <h4>Контакты</h4>
-            <p id="footerPhone">Свяжитесь с нами</p>
-            <p id="footerAddress">Адрес уточняется</p>
+
+            <a href="tel:+798407778899">
+              +7 (984) 077-78-899
+            </a>
+
+            <a href="https://t.me/finesssim777"
+               target="_blank"
+               rel="noopener noreferrer">
+              Telegram: @finesssim777
+            </a>
+
+            <a href="https://www.google.com/maps/search/?api=1&query=ул.+Малые+Озёра,+14,+Нижний+Новгород"
+               target="_blank"
+               rel="noopener noreferrer">
+              Нижний Новгород, ул. Малые Озёра, 14
+            </a>
+
             <p>Пн–Пт · 09:00–18:00</p>
+            <p>Сб–Вс · 10:00–15:00</p>
           </div>
         </div>
       </div>
@@ -1387,7 +1488,6 @@
         staffSelect.appendChild(option);
       });
 
-      // Врачей нельзя выбрать, пока не выбрана услуга.
       staffSelect.disabled = true;
 
       const staffGrid = document.getElementById("staffGrid");
@@ -1444,10 +1544,9 @@
     // ------------------------------
 
     function renderSettings(settings) {
-      if (!settings) return;
-
-      const phone = settings.phone || "";
-      const address = settings.address || "";
+      const phone = "+798407778899";
+      const displayPhone = "+7 (984) 077-78-899";
+      const address = "г. Нижний Новгород, ул. Малые Озёра, 14";
 
       const footerPhone =
         document.getElementById("footerPhone");
@@ -1455,22 +1554,24 @@
       const footerAddress =
         document.getElementById("footerAddress");
 
-      footerPhone.textContent = phone || "Свяжитесь с нами";
-      footerAddress.textContent = address || "Адрес уточняется";
+      if (footerPhone) footerPhone.textContent = displayPhone;
+      if (footerAddress) footerAddress.textContent = address;
 
-      if (phone) {
-        const headerContact =
-          document.querySelector(".header-contact");
+      const headerContact =
+        document.querySelector(".header-contact");
 
-        if (headerContact && !headerContact.querySelector(".header-phone")) {
-          const link = document.createElement("a");
+      if (headerContact) {
+        let phoneLink =
+          headerContact.querySelector(".header-phone");
 
-          link.className = "header-phone";
-          link.href = "tel:" + phone.replace(/[^\d+]/g, "");
-          link.textContent = phone;
-
-          headerContact.prepend(link);
+        if (!phoneLink) {
+          phoneLink = document.createElement("a");
+          phoneLink.className = "header-phone";
+          headerContact.prepend(phoneLink);
         }
+
+        phoneLink.href = "tel:" + phone;
+        phoneLink.textContent = displayPhone;
       }
     }
 
@@ -1495,7 +1596,6 @@
         renderServices(data.services);
         renderStaff(data.staff);
 
-        // Начальное состояние формы
         staffSelect.disabled = true;
         dateInput.disabled = true;
         resetTimeSelect();
@@ -1584,7 +1684,6 @@
           );
         }
 
-        // Поддерживаем несколько возможных форматов ответа API.
         let slots = Array.isArray(data)
           ? data
           : (
@@ -1656,10 +1755,9 @@
 
 
     // ------------------------------
-    // ИСПРАВЛЕННАЯ ЛОГИКА ВЫБОРА
+    // Логика выбора
     // ------------------------------
 
-    // 1. Выбрали услугу — разрешаем выбрать специалиста.
     serviceSelect.addEventListener("change", () => {
       invalidateAvailability();
 
@@ -1679,7 +1777,6 @@
     });
 
 
-    // 2. Выбрали специалиста — разрешаем выбрать дату.
     staffSelect.addEventListener("change", () => {
       invalidateAvailability();
 
@@ -1698,7 +1795,6 @@
           "Теперь выберите дату, чтобы увидеть свободное время."
         );
 
-        // Открываем календарь только после выбора обоих полей.
         dateInput.focus();
       }
 
@@ -1706,7 +1802,6 @@
     });
 
 
-    // 3. Выбрали дату — запрашиваем свободные часы.
     dateInput.addEventListener("change", () => {
       setBookingStatus("");
       loadAvailableSlots();
@@ -1833,7 +1928,6 @@
           "success"
         );
 
-        // Сбрасываем форму только после успешного ответа сервера.
         bookingForm.reset();
 
         invalidateAvailability();
