@@ -1,4 +1,3 @@
-
 const json = (data, status = 200, extraHeaders = {}) =>
   new Response(JSON.stringify(data), {
     status,
@@ -273,6 +272,87 @@ function validId(value) {
 }
 
 // ------------------------------
+// Московское время
+// ------------------------------
+
+function getMoscowDateTime() {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Moscow",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23"
+  }).formatToParts(new Date());
+
+  const values = Object.fromEntries(
+    parts.map(part => [part.type, part.value])
+  );
+
+  return (
+    `${values.year}-${values.month}-${values.day}` +
+    `T${values.hour}:${values.minute}`
+  );
+}
+
+function validBookingDate(value) {
+  if (
+    typeof value !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(value)
+  ) {
+    return false;
+  }
+
+  const [year, month, day] =
+    value.split("-").map(Number);
+
+  const date = new Date(
+    Date.UTC(year, month - 1, day)
+  );
+
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  );
+}
+
+function isWorkingDay(dateString) {
+  if (!validBookingDate(dateString)) return false;
+
+  const [year, month, day] =
+    dateString.split("-").map(Number);
+
+  const weekday = new Date(
+    Date.UTC(year, month - 1, day)
+  ).getUTCDay();
+
+  return weekday >= 1 && weekday <= 5;
+}
+
+function isWorkingAppointment(appointmentAt, duration) {
+  if (!validAppointment(appointmentAt)) return false;
+
+  const [date, time] = appointmentAt.split("T");
+
+  if (!isWorkingDay(date)) return false;
+
+  const [hour, minute] = time.split(":").map(Number);
+
+  if (hour < 9 || hour >= 18) return false;
+
+  if (minute % 15 !== 0) return false;
+
+  const startMinutes = hour * 60 + minute;
+  const endMinutes = startMinutes + duration;
+
+  if (endMinutes > 18 * 60) return false;
+
+  return appointmentAt > getMoscowDateTime();
+}
+
+// ------------------------------
 // Работа с базой данных
 // ------------------------------
 
@@ -306,7 +386,7 @@ async function findActiveStaff(db, id) {
 }
 
 // ------------------------------
-// Длительность услуг и расписание
+// Длительность услуг
 // ------------------------------
 
 async function getServiceDuration(db, serviceId, serviceName) {
@@ -339,6 +419,10 @@ async function getServiceDuration(db, serviceId, serviceName) {
       : 60
   );
 }
+
+// ------------------------------
+// Проверка занятости врача
+// ------------------------------
 
 async function hasStaffConflict(
   db,
@@ -390,6 +474,115 @@ async function hasStaffConflict(
   ).first();
 
   return Boolean(conflict);
+}
+
+// ------------------------------
+// Получение свободного времени
+// ------------------------------
+
+async function getAvailableSlots(
+  db,
+  date,
+  staffId,
+  serviceId
+) {
+  if (
+    !validBookingDate(date) ||
+    !isWorkingDay(date) ||
+    !validId(staffId) ||
+    !validId(serviceId)
+  ) {
+    return [];
+  }
+
+  const service = await findActiveService(
+    db,
+    Number(serviceId)
+  );
+
+  const staff = await findActiveStaff(
+    db,
+    Number(staffId)
+  );
+
+  if (!service || !staff) return [];
+
+  const duration = Number(
+    service.duration_minutes
+  ) || 60;
+
+  const slots = [];
+
+  for (
+    let minutes = 9 * 60;
+    minutes + duration <= 18 * 60;
+    minutes += 15
+  ) {
+    const hour = String(
+      Math.floor(minutes / 60)
+    ).padStart(2, "0");
+
+    const minute = String(
+      minutes % 60
+    ).padStart(2, "0");
+
+    const time = `${hour}:${minute}`;
+    const appointmentAt = `${date}T${time}`;
+
+    if (appointmentAt <= getMoscowDateTime()) {
+      continue;
+    }
+
+    const conflict = await hasStaffConflict(
+      db,
+      Number(staffId),
+      appointmentAt,
+      duration
+    );
+
+    if (!conflict) {
+      slots.push(time);
+    }
+  }
+
+  return slots;
+}
+
+async function getPublicAvailability(request, db) {
+  const url = new URL(request.url);
+
+  const date = url.searchParams.get("date");
+  const staffId = url.searchParams.get("staff_id");
+  const serviceId = url.searchParams.get("service_id");
+
+  if (
+    !validBookingDate(date) ||
+    !validId(staffId) ||
+    !validId(serviceId)
+  ) {
+    return json(
+      {
+        error: "Выберите корректные услугу, врача и дату"
+      },
+      400
+    );
+  }
+
+  if (!isWorkingDay(date)) {
+    return json({
+      slots: [],
+      message: "В выходные дни клиника не работает"
+    });
+  }
+
+  const slots = await getAvailableSlots(
+    db,
+    date,
+    staffId,
+    serviceId
+  );
+
+  return json({ slots });
 }
 
 // ------------------------------
@@ -488,11 +681,6 @@ async function createPublicBooking(request, db) {
     40
   );
 
-  const serviceNameInput = safeText(
-    body.service ?? "",
-    120
-  );
-
   const message = safeText(
     body.message ?? "",
     2000
@@ -503,33 +691,68 @@ async function createPublicBooking(request, db) {
     clientName.length < 2 ||
     !phone ||
     !validPhone(phone) ||
-    !serviceNameInput ||
-    message === null
+    message === null ||
+    !validId(body.service_id) ||
+    !validId(body.staff_id) ||
+    !validAppointment(body.appointment_at)
   ) {
     return json(
       {
-        error: "Проверьте имя, номер телефона и выбранную услугу"
+        error: "Заполните имя, телефон, услугу, врача, дату и время"
       },
       400
     );
   }
 
-  const service = await db.prepare(
-    `SELECT id, title
-     FROM services
-     WHERE active = 1
-       AND LOWER(TRIM(title)) = LOWER(TRIM(?))
-     LIMIT 1`
-  ).bind(serviceNameInput).first();
+  const serviceId = Number(body.service_id);
+  const staffId = Number(body.staff_id);
+  const appointmentAt = body.appointment_at;
+
+  const service = await findActiveService(
+    db,
+    serviceId
+  );
+
+  const staff = await findActiveStaff(
+    db,
+    staffId
+  );
 
   if (!service) {
     return json(
       {
-        error: "Выбранная услуга недоступна. Обновите страницу."
+        error: "Выбранная услуга больше недоступна. Обновите страницу."
       },
       400
     );
   }
+
+  if (!staff) {
+    return json(
+      {
+        error: "Выбранный врач больше недоступен. Обновите страницу."
+      },
+      400
+    );
+  }
+
+  const duration = Number(
+    service.duration_minutes
+  ) || 60;
+
+  if (!isWorkingAppointment(appointmentAt, duration)) {
+    return json(
+      {
+        error: "Выбранное время находится вне рабочего расписания или уже прошло"
+      },
+      400
+    );
+  }
+
+  /*
+    Проверка и добавление выполняются одним SQL-запросом.
+    Это уменьшает риск двойной записи на один слот.
+  */
 
   const result = await db.prepare(
     `INSERT INTO bookings (
@@ -544,20 +767,67 @@ async function createPublicBooking(request, db) {
       notes,
       updated_at
     )
-    VALUES (?, ?, ?, ?, 'new', NULL, NULL, ?, ?, CURRENT_TIMESTAMP)`
+    SELECT
+      ?, ?, ?, ?, 'new', ?, ?, ?, ?, CURRENT_TIMESTAMP
+
+    WHERE NOT EXISTS (
+      SELECT 1
+      FROM bookings b
+
+      LEFT JOIN services s
+        ON s.id = b.service_id
+
+      WHERE b.staff_id = ?
+        AND b.status != 'cancelled'
+        AND b.appointment_at IS NOT NULL
+        AND b.appointment_at != ''
+
+        AND datetime(b.appointment_at) <
+            datetime(?, '+' || ? || ' minutes')
+
+        AND datetime(
+          b.appointment_at,
+          '+' || COALESCE(
+            s.duration_minutes,
+            (
+              SELECT legacy_service.duration_minutes
+              FROM services legacy_service
+              WHERE LOWER(TRIM(legacy_service.title)) =
+                    LOWER(TRIM(b.service))
+              LIMIT 1
+            ),
+            60
+          ) || ' minutes'
+        ) > datetime(?)
+    )`
   ).bind(
     clientName,
     phone,
     service.title,
     message,
-    service.id,
-    message
+    appointmentAt,
+    staffId,
+    serviceId,
+    message,
+    staffId,
+    appointmentAt,
+    duration,
+    appointmentAt
   ).run();
+
+  if (!result.meta.changes) {
+    return json(
+      {
+        error: "Это время уже занято. Обновите список свободного времени и выберите другой слот."
+      },
+      409
+    );
+  }
 
   return json(
     {
       success: true,
-      message: "Заявка успешно отправлена",
+      message: "Заявка успешно отправлена! Мы свяжемся с вами для подтверждения.",
       id: result.meta.last_row_id
     },
     201
@@ -1596,7 +1866,6 @@ async function updateBooking(request, db, id) {
     );
   }
 
-  // Проверка пересечения приёмов у одного врача.
   if (
     nextStaffId !== null &&
     nextAppointmentAt &&
@@ -1805,6 +2074,17 @@ async function handleRequest(request, env) {
   }
 
   // --------------------------
+  // Публичное расписание
+  // --------------------------
+
+  if (
+    route === "/api/availability" &&
+    method === "GET"
+  ) {
+    return getPublicAvailability(request, db);
+  }
+
+  // --------------------------
   // Публичная форма записи
   // --------------------------
 
@@ -1997,5 +2277,3 @@ export async function onRequest(context) {
     );
   }
 }
-
-
