@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -7,55 +8,32 @@
 <title>Управление — FINESSSIM</title>
 <style>
 :root {
-  --bg:#f4f0e7;
-  --paper:#fffdf8;
-  --green:#183b32;
-  --muted:#77796f;
-  --line:rgba(24,59,50,.16);
-  --lime:#d5e66c;
-  --red:#a33b2e;
+  --bg:#f4f0e7;--paper:#fffdf8;--green:#183b32;
+  --muted:#77796f;--line:rgba(24,59,50,.16);
+  --lime:#d5e66c;--red:#a33b2e;
 }
 *{box-sizing:border-box}
-body{
-  margin:0;background:var(--bg);color:var(--green);
-  font-family:Arial,sans-serif;
-}
+body{margin:0;background:var(--bg);color:var(--green);font-family:Arial,sans-serif}
 button,input,textarea,select{font:inherit}
 button{cursor:pointer}
-.topbar{
-  padding:22px 5%;display:flex;justify-content:space-between;
-  align-items:center;border-bottom:1px solid var(--line);
-}
+.topbar{padding:22px 5%;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line)}
 .logo{font-size:25px;font-weight:900;letter-spacing:-1.5px}
 .topbar small{color:var(--muted)}
 .container{max-width:1100px;margin:50px auto;padding:0 24px}
 h1{font-size:clamp(32px,5vw,54px);letter-spacing:-2px;margin:0 0 12px}
 .subtitle{color:var(--muted);line-height:1.6}
-.login{
-  max-width:440px;margin:90px auto;background:var(--paper);
-  padding:38px;border:1px solid var(--line);
-}
+.login{max-width:440px;margin:90px auto;background:var(--paper);padding:38px;border:1px solid var(--line)}
 .login h1{font-size:34px}
 label{display:block;font-size:12px;margin:15px 0 8px}
-input,textarea,select{
-  width:100%;padding:13px;border:1px solid var(--line);
-  background:transparent;color:var(--green);outline:none;
-  border-radius:0;
-}
+input,textarea,select{width:100%;padding:13px;border:1px solid var(--line);background:transparent;color:var(--green);outline:none;border-radius:0}
 select{cursor:pointer}
 select option{background:var(--paper);color:var(--green)}
 textarea{min-height:85px;resize:vertical}
 input:focus,textarea:focus,select:focus{border-color:var(--green)}
-.btn{
-  border:0;padding:14px 19px;background:var(--green);
-  color:white;font-size:12px;font-weight:bold;
-}
+.btn{border:0;padding:14px 19px;background:var(--green);color:white;font-size:12px;font-weight:bold}
 .btn:hover{background:#285548}
 .btn:disabled{opacity:.5;cursor:wait}
-.btn-light{
-  background:transparent;color:var(--green);
-  border:1px solid var(--line);
-}
+.btn-light{background:transparent;color:var(--green);border:1px solid var(--line)}
 .btn-danger{background:var(--red)}
 .btn-small{padding:10px 13px}
 .login .btn{width:100%;margin-top:18px}
@@ -63,80 +41,48 @@ input:focus,textarea:focus,select:focus{border-color:var(--green)}
 .error{color:var(--red)}
 .success{color:#28704e}
 .hidden{display:none!important}
-.tabs{
-  display:flex;gap:8px;flex-wrap:wrap;
-  margin:34px 0 25px;
-}
-.tab{
-  padding:13px 18px;border:1px solid var(--line);
-  background:transparent;color:var(--green);
-}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:34px 0 25px}
+.tab{padding:13px 18px;border:1px solid var(--line);background:transparent;color:var(--green)}
 .tab.active{background:var(--green);color:white}
 .section{display:none}
 .section.active{display:block}
-.section-head{
-  display:flex;justify-content:space-between;
-  align-items:center;gap:15px;flex-wrap:wrap;margin-bottom:20px;
-}
+.section-head{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap;margin-bottom:20px}
 .section h2{font-size:27px;letter-spacing:-1px}
-.card{
-  background:var(--paper);border:1px solid var(--line);
-  padding:24px;margin-bottom:16px;
-}
+.card{background:var(--paper);border:1px solid var(--line);padding:24px;margin-bottom:16px}
 .card h3{margin:0 0 14px;font-size:19px}
-.grid{
-  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:0 18px;
-}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px}
 .full{grid-column:1/-1}
 .actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}
-.checkbox{
-  display:flex;align-items:center;gap:9px;margin-top:18px;
-}
+.checkbox{display:flex;align-items:center;gap:9px;margin-top:18px}
 .checkbox input{width:auto}
 .status{font-size:11px;color:var(--muted);margin-left:8px}
 .note{font-size:12px;color:var(--muted);line-height:1.5}
 .empty{padding:25px;color:var(--muted);background:var(--paper)}
-.booking-meta{
-  display:flex;gap:12px;flex-wrap:wrap;
-  color:var(--muted);font-size:12px;margin-bottom:16px;
-}
-.booking-info{
-  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:12px 20px;
-}
+.booking-meta{display:flex;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin-bottom:16px}
+.booking-info{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 20px}
 .booking-info div{min-width:0}
-.booking-info strong{
-  display:block;font-size:11px;color:var(--muted);
-  font-weight:normal;margin-bottom:5px;
-}
-.booking-info span{
-  display:block;font-size:14px;overflow-wrap:anywhere;
-  line-height:1.5;
-}
-.booking-message{
-  white-space:pre-wrap;overflow-wrap:anywhere;
-}
-.booking-controls{
-  display:grid;grid-template-columns:minmax(0,1fr) auto;
-  gap:10px;align-items:end;margin-top:18px;
-}
+.booking-info strong{display:block;font-size:11px;color:var(--muted);font-weight:normal;margin-bottom:5px}
+.booking-info span{display:block;font-size:14px;overflow-wrap:anywhere;line-height:1.5}
+.booking-message{white-space:pre-wrap;overflow-wrap:anywhere}
+.booking-controls{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end;margin-top:18px}
 .booking-controls label{margin:0}
 .booking-controls select{min-width:180px}
-.booking-filter{
-  display:flex;gap:12px;align-items:center;flex-wrap:wrap;
-  margin-bottom:20px;
-}
+.booking-filter{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:20px}
 .booking-filter select{max-width:240px}
 .booking-count{font-size:12px;color:var(--muted)}
+.appointment-box{margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
+.appointment-box h4{margin:0 0 12px;font-size:15px}
+.appointment-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px}
+.appointment-current{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.6}
 @media(max-width:650px){
-  .grid,.booking-info{grid-template-columns:1fr}
+  .grid,.booking-info,.appointment-grid{grid-template-columns:1fr}
   .full{grid-column:auto}
   .container{margin:32px auto}
   .card{padding:18px}
   .topbar{padding:18px 22px}
   .booking-controls{grid-template-columns:1fr}
   .booking-controls .btn{width:100%}
+  .appointment-box .btn{width:100%}
 }
 </style>
 </head>
@@ -152,8 +98,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--green)}
   <p class="subtitle">Войдите для управления сайтом FINESSSIM Dental Studio.</p>
   <form id="loginForm">
     <label for="password">Пароль владельца</label>
-    <input id="password" type="password" required
-      autocomplete="current-password" maxlength="200">
+    <input id="password" type="password" required autocomplete="current-password" maxlength="200">
     <button class="btn" id="loginButton">ВОЙТИ ↗</button>
   </form>
   <div id="loginMessage" class="message" role="status"></div>
@@ -171,22 +116,16 @@ input:focus,textarea:focus,select:focus{border-color:var(--green)}
   </div>
 
   <section id="settings" class="section active">
-    <div class="section-head">
-      <h2>Настройки студии</h2>
-    </div>
+    <div class="section-head"><h2>Настройки студии</h2></div>
     <form id="settingsForm" class="card">
       <label>Название студии</label>
       <input name="studio_name" maxlength="300" required>
-
       <label>Телефон</label>
       <input name="phone" maxlength="300">
-
       <label>Адрес</label>
       <input name="address" maxlength="300">
-
       <label>График работы</label>
       <input name="working_hours" maxlength="300">
-
       <div class="actions">
         <button class="btn" type="submit">СОХРАНИТЬ НАСТРОЙКИ</button>
       </div>
@@ -203,26 +142,11 @@ input:focus,textarea:focus,select:focus{border-color:var(--green)}
     <form id="newService" class="card hidden">
       <h3>Новая услуга</h3>
       <div class="grid">
-        <div>
-          <label>Название</label>
-          <input name="title" required maxlength="120">
-        </div>
-        <div>
-          <label>Цена</label>
-          <input name="price" maxlength="80" placeholder="Например, от 3 000 ₽">
-        </div>
-        <div class="full">
-          <label>Описание</label>
-          <textarea name="description" maxlength="1000"></textarea>
-        </div>
-        <div class="full">
-          <label>Ссылка на фотографию (HTTPS)</label>
-          <input name="image_url" type="url" maxlength="1000" placeholder="https://...">
-        </div>
-        <div>
-          <label>Порядок отображения</label>
-          <input name="sort_order" type="number" value="0">
-        </div>
+        <div><label>Название</label><input name="title" required maxlength="120"></div>
+        <div><label>Цена</label><input name="price" maxlength="80" placeholder="Например, от 3 000 ₽"></div>
+        <div class="full"><label>Описание</label><textarea name="description" maxlength="1000"></textarea></div>
+        <div class="full"><label>Ссылка на фотографию (HTTPS)</label><input name="image_url" type="url" maxlength="1000" placeholder="https://..."></div>
+        <div><label>Порядок отображения</label><input name="sort_order" type="number" value="0"></div>
       </div>
       <div class="actions">
         <button class="btn" type="submit">СОЗДАТЬ</button>
@@ -230,7 +154,6 @@ input:focus,textarea:focus,select:focus{border-color:var(--green)}
       </div>
       <div class="message" id="newServiceMessage"></div>
     </form>
-
     <div id="servicesList"></div>
   </section>
 
@@ -243,26 +166,11 @@ input:focus,textarea:focus,select:focus{border-color:var(--green)}
     <form id="newStaff" class="card hidden">
       <h3>Новый сотрудник</h3>
       <div class="grid">
-        <div>
-          <label>Имя</label>
-          <input name="name" required maxlength="120">
-        </div>
-        <div>
-          <label>Должность</label>
-          <input name="position" maxlength="120">
-        </div>
-        <div class="full">
-          <label>Описание</label>
-          <textarea name="description" maxlength="1000"></textarea>
-        </div>
-        <div class="full">
-          <label>Ссылка на фотографию (HTTPS)</label>
-          <input name="photo_url" type="url" maxlength="1000" placeholder="https://...">
-        </div>
-        <div>
-          <label>Порядок отображения</label>
-          <input name="sort_order" type="number" value="0">
-        </div>
+        <div><label>Имя</label><input name="name" required maxlength="120"></div>
+        <div><label>Должность</label><input name="position" maxlength="120"></div>
+        <div class="full"><label>Описание</label><textarea name="description" maxlength="1000"></textarea></div>
+        <div class="full"><label>Ссылка на фотографию (HTTPS)</label><input name="photo_url" type="url" maxlength="1000" placeholder="https://..."></div>
+        <div><label>Порядок отображения</label><input name="sort_order" type="number" value="0"></div>
       </div>
       <div class="actions">
         <button class="btn" type="submit">СОЗДАТЬ</button>
@@ -270,7 +178,6 @@ input:focus,textarea:focus,select:focus{border-color:var(--green)}
       </div>
       <div class="message" id="newStaffMessage"></div>
     </form>
-
     <div id="staffList"></div>
   </section>
 
@@ -292,14 +199,8 @@ input:focus,textarea:focus,select:focus{border-color:var(--green)}
       <span id="bookingCount" class="booking-count"></span>
     </div>
 
-    <div id="bookingsList">
-      <div class="empty">Загрузка записей...</div>
-    </div>
+    <div id="bookingsList"><div class="empty">Загрузка записей...</div></div>
     <div id="bookingsMessage" class="message" role="status"></div>
-
-    <p class="note">
-      Здесь отображаются заявки, сохранённые в базе данных. Пока публичная форма записи на сайте не подключена, новые заявки автоматически появляться не будут.
-    </p>
   </section>
 
   <div class="actions" style="margin-top:35px">
@@ -319,13 +220,12 @@ const STATUS_LABELS = {
   cancelled: "Отменена"
 };
 
+let allBookings = [];
+let allStaff = [];
+
 function escapeHTML(value) {
   return String(value ?? "").replace(/[&<>"']/g, char => ({
-    "&":"&amp;",
-    "<":"&lt;",
-    ">":"&gt;",
-    '"':"&quot;",
-    "'":"&#39;"
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
   })[char]);
 }
 
@@ -355,10 +255,7 @@ async function api(path, method = "GET", body = undefined) {
     throw new Error("Сессия завершена. Войдите снова.");
   }
 
-  if (!response.ok) {
-    throw new Error(data.error || "Ошибка сервера");
-  }
-
+  if (!response.ok) throw new Error(data.error || "Ошибка сервера");
   return data;
 }
 
@@ -373,12 +270,7 @@ function showApp() {
 }
 
 async function loadAll() {
-  await Promise.all([
-    loadSettings(),
-    loadServices(),
-    loadStaff(),
-    loadBookings()
-  ]);
+  await Promise.all([loadSettings(),loadServices(),loadStaff(),loadBookings()]);
 }
 
 $("#loginForm").addEventListener("submit", async event => {
@@ -388,9 +280,7 @@ $("#loginForm").addEventListener("submit", async event => {
   message($("#loginMessage"), "Проверяем пароль...");
 
   try {
-    await api("/login", "POST", {
-      password: $("#password").value
-    });
+    await api("/login", "POST", {password:$("#password").value});
     $("#password").value = "";
     showApp();
     await loadAll();
@@ -430,9 +320,7 @@ document.querySelectorAll(".tab").forEach(button => {
     button.classList.add("active");
     $("#" + button.dataset.tab).classList.add("active");
 
-    if (button.dataset.tab === "bookings") {
-      loadBookings();
-    }
+    if (button.dataset.tab === "bookings") loadBookings();
   });
 });
 
@@ -440,8 +328,7 @@ async function loadSettings() {
   try {
     const settings = await api("/admin/settings");
     const form = $("#settingsForm");
-
-    for (const key of ["studio_name", "phone", "address", "working_hours"]) {
+    for (const key of ["studio_name","phone","address","working_hours"]) {
       form.elements[key].value = settings[key] || "";
     }
   } catch (error) {
@@ -451,9 +338,7 @@ async function loadSettings() {
 
 $("#settingsForm").addEventListener("submit", async event => {
   event.preventDefault();
-  const form = event.currentTarget;
-  const body = Object.fromEntries(new FormData(form).entries());
-
+  const body = Object.fromEntries(new FormData(event.currentTarget).entries());
   try {
     await api("/admin/settings", "PUT", body);
     message($("#settingsMessage"), "Настройки сохранены.", "success");
@@ -464,41 +349,18 @@ $("#settingsForm").addEventListener("submit", async event => {
 
 function serviceCard(item) {
   const id = Number(item.id);
-
   return `
   <form class="card edit-service" data-id="${id}">
-    <h3>${escapeHTML(item.title)}
-      <span class="status">${item.active ? "АКТИВНА" : "СКРЫТА"}</span>
-    </h3>
+    <h3>${escapeHTML(item.title)} <span class="status">${item.active ? "АКТИВНА" : "СКРЫТА"}</span></h3>
     <div class="grid">
-      <div>
-        <label>Название</label>
-        <input name="title" required maxlength="120" value="${escapeHTML(item.title)}">
-      </div>
-      <div>
-        <label>Цена</label>
-        <input name="price" maxlength="80" value="${escapeHTML(item.price)}">
-      </div>
-      <div class="full">
-        <label>Описание</label>
-        <textarea name="description" maxlength="1000">${escapeHTML(item.description)}</textarea>
-      </div>
-      <div class="full">
-        <label>Ссылка на фотографию (HTTPS)</label>
-        <input name="image_url" type="url" maxlength="1000" value="${escapeHTML(item.image_url)}">
-      </div>
-      <div>
-        <label>Порядок</label>
-        <input name="sort_order" type="number" value="${Number(item.sort_order) || 0}">
-      </div>
+      <div><label>Название</label><input name="title" required maxlength="120" value="${escapeHTML(item.title)}"></div>
+      <div><label>Цена</label><input name="price" maxlength="80" value="${escapeHTML(item.price)}"></div>
+      <div class="full"><label>Описание</label><textarea name="description" maxlength="1000">${escapeHTML(item.description)}</textarea></div>
+      <div class="full"><label>Ссылка на фотографию (HTTPS)</label><input name="image_url" type="url" maxlength="1000" value="${escapeHTML(item.image_url)}"></div>
+      <div><label>Порядок</label><input name="sort_order" type="number" value="${Number(item.sort_order)||0}"></div>
     </div>
-    <label class="checkbox">
-      <input type="checkbox" name="active" ${item.active ? "checked" : ""}>
-      Показывать на сайте
-    </label>
-    <div class="actions">
-      <button class="btn" type="submit">СОХРАНИТЬ</button>
-    </div>
+    <label class="checkbox"><input type="checkbox" name="active" ${item.active ? "checked" : ""}>Показывать на сайте</label>
+    <div class="actions"><button class="btn" type="submit">СОХРАНИТЬ</button></div>
     <div class="message"></div>
   </form>`;
 }
@@ -506,25 +368,19 @@ function serviceCard(item) {
 async function loadServices() {
   try {
     const items = await api("/admin/services");
-
-    $("#servicesList").innerHTML = items.length
-      ? items.map(serviceCard).join("")
-      : '<div class="empty">Услуг пока нет.</div>';
+    $("#servicesList").innerHTML = items.length ? items.map(serviceCard).join("") : '<div class="empty">Услуг пока нет.</div>';
   } catch (error) {
     $("#servicesList").textContent = error.message;
   }
 }
 
-$("#addServiceButton").addEventListener("click", () => {
-  $("#newService").classList.toggle("hidden");
-});
+$("#addServiceButton").addEventListener("click", () => $("#newService").classList.toggle("hidden"));
 
 $("#newService").addEventListener("submit", async event => {
   event.preventDefault();
   const form = event.currentTarget;
   const body = Object.fromEntries(new FormData(form).entries());
   body.sort_order = Number(body.sort_order || 0);
-
   try {
     await api("/admin/services", "POST", body);
     form.reset();
@@ -539,15 +395,12 @@ $("#newService").addEventListener("submit", async event => {
 $("#servicesList").addEventListener("submit", async event => {
   if (!event.target.matches(".edit-service")) return;
   event.preventDefault();
-
   const form = event.target;
-  const id = form.dataset.id;
   const body = Object.fromEntries(new FormData(form).entries());
   body.sort_order = Number(body.sort_order || 0);
   body.active = form.elements.active.checked;
-
   try {
-    await api("/admin/services/" + id, "PUT", body);
+    await api("/admin/services/" + form.dataset.id, "PUT", body);
     message(form.querySelector(".message"), "Изменения сохранены.", "success");
     await loadServices();
   } catch (error) {
@@ -556,42 +409,18 @@ $("#servicesList").addEventListener("submit", async event => {
 });
 
 function staffCard(item) {
-  const id = Number(item.id);
-
   return `
-  <form class="card edit-staff" data-id="${id}">
-    <h3>${escapeHTML(item.name)}
-      <span class="status">${item.active ? "АКТИВЕН" : "СКРЫТ"}</span>
-    </h3>
+  <form class="card edit-staff" data-id="${Number(item.id)}">
+    <h3>${escapeHTML(item.name)} <span class="status">${item.active ? "АКТИВЕН" : "СКРЫТ"}</span></h3>
     <div class="grid">
-      <div>
-        <label>Имя</label>
-        <input name="name" required maxlength="120" value="${escapeHTML(item.name)}">
-      </div>
-      <div>
-        <label>Должность</label>
-        <input name="position" maxlength="120" value="${escapeHTML(item.position)}">
-      </div>
-      <div class="full">
-        <label>Описание</label>
-        <textarea name="description" maxlength="1000">${escapeHTML(item.description)}</textarea>
-      </div>
-      <div class="full">
-        <label>Ссылка на фотографию (HTTPS)</label>
-        <input name="photo_url" type="url" maxlength="1000" value="${escapeHTML(item.photo_url)}">
-      </div>
-      <div>
-        <label>Порядок</label>
-        <input name="sort_order" type="number" value="${Number(item.sort_order) || 0}">
-      </div>
+      <div><label>Имя</label><input name="name" required maxlength="120" value="${escapeHTML(item.name)}"></div>
+      <div><label>Должность</label><input name="position" maxlength="120" value="${escapeHTML(item.position)}"></div>
+      <div class="full"><label>Описание</label><textarea name="description" maxlength="1000">${escapeHTML(item.description)}</textarea></div>
+      <div class="full"><label>Ссылка на фотографию (HTTPS)</label><input name="photo_url" type="url" maxlength="1000" value="${escapeHTML(item.photo_url)}"></div>
+      <div><label>Порядок</label><input name="sort_order" type="number" value="${Number(item.sort_order)||0}"></div>
     </div>
-    <label class="checkbox">
-      <input type="checkbox" name="active" ${item.active ? "checked" : ""}>
-      Показывать на сайте
-    </label>
-    <div class="actions">
-      <button class="btn" type="submit">СОХРАНИТЬ</button>
-    </div>
+    <label class="checkbox"><input type="checkbox" name="active" ${item.active ? "checked" : ""}>Показывать на сайте</label>
+    <div class="actions"><button class="btn" type="submit">СОХРАНИТЬ</button></div>
     <div class="message"></div>
   </form>`;
 }
@@ -599,25 +428,21 @@ function staffCard(item) {
 async function loadStaff() {
   try {
     const items = await api("/admin/staff");
-
-    $("#staffList").innerHTML = items.length
-      ? items.map(staffCard).join("")
-      : '<div class="empty">Сотрудников пока нет.</div>';
+    allStaff = Array.isArray(items) ? items : [];
+    $("#staffList").innerHTML = allStaff.length ? allStaff.map(staffCard).join("") : '<div class="empty">Сотрудников пока нет.</div>';
   } catch (error) {
     $("#staffList").textContent = error.message;
+    allStaff = [];
   }
 }
 
-$("#addStaffButton").addEventListener("click", () => {
-  $("#newStaff").classList.toggle("hidden");
-});
+$("#addStaffButton").addEventListener("click", () => $("#newStaff").classList.toggle("hidden"));
 
 $("#newStaff").addEventListener("submit", async event => {
   event.preventDefault();
   const form = event.currentTarget;
   const body = Object.fromEntries(new FormData(form).entries());
   body.sort_order = Number(body.sort_order || 0);
-
   try {
     await api("/admin/staff", "POST", body);
     form.reset();
@@ -632,15 +457,12 @@ $("#newStaff").addEventListener("submit", async event => {
 $("#staffList").addEventListener("submit", async event => {
   if (!event.target.matches(".edit-staff")) return;
   event.preventDefault();
-
   const form = event.target;
-  const id = form.dataset.id;
   const body = Object.fromEntries(new FormData(form).entries());
   body.sort_order = Number(body.sort_order || 0);
   body.active = form.elements.active.checked;
-
   try {
-    await api("/admin/staff/" + id, "PUT", body);
+    await api("/admin/staff/" + form.dataset.id, "PUT", body);
     message(form.querySelector(".message"), "Изменения сохранены.", "success");
     await loadStaff();
   } catch (error) {
@@ -650,68 +472,87 @@ $("#staffList").addEventListener("submit", async event => {
 
 // ЗАПИСИ КЛИЕНТОВ
 
-let allBookings = [];
-
 function formatDate(value) {
-  if (!value) return "Дата не указана";
-
+  if (!value) return "Не назначено";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
-
   return new Intl.DateTimeFormat("ru-RU", {
-    dateStyle: "medium",
-    timeStyle: "short"
+    dateStyle:"medium",timeStyle:"short"
   }).format(date);
+}
+
+// Преобразует сохранённую дату в формат поля datetime-local.
+function toDateTimeLocal(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value).slice(0,16);
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return localDate.toISOString().slice(0,16);
+}
+
+function staffOptions(selectedId) {
+  const activeStaff = allStaff.filter(person => Number(person.active) === 1 || person.active === true);
+  const options = activeStaff.map(person => `
+    <option value="${Number(person.id)}" ${String(person.id) === String(selectedId ?? "") ? "selected" : ""}>
+      ${escapeHTML(person.name)}${person.position ? " — " + escapeHTML(person.position) : ""}
+    </option>
+  `).join("");
+
+  return `<option value="">Не назначен</option>${options}`;
 }
 
 function bookingCard(item) {
   const id = Number(item.id);
-  const status = STATUS_LABELS[item.status]
-    ? item.status
-    : "new";
+  const status = STATUS_LABELS[item.status] ? item.status : "new";
+  const doctor = allStaff.find(person => String(person.id) === String(item.staff_id));
 
   return `
   <article class="card booking-card" data-id="${id}">
     <div class="booking-meta">
       <span>ЗАПИСЬ №${id}</span>
-      <span>${escapeHTML(formatDate(item.created_at))}</span>
+      <span>Заявка: ${escapeHTML(formatDate(item.created_at))}</span>
     </div>
 
     <div class="booking-info">
-      <div>
-        <strong>КЛИЕНТ</strong>
-        <span>${escapeHTML(item.client_name || "Не указано")}</span>
-      </div>
-
-      <div>
-        <strong>ТЕЛЕФОН</strong>
-        <span>${escapeHTML(item.phone || "Не указан")}</span>
-      </div>
-
-      <div>
-        <strong>УСЛУГА</strong>
-        <span>${escapeHTML(item.service || "Не указана")}</span>
-      </div>
-
-      <div>
-        <strong>КОММЕНТАРИЙ</strong>
-        <span class="booking-message">${escapeHTML(item.message || "Нет комментария")}</span>
-      </div>
+      <div><strong>КЛИЕНТ</strong><span>${escapeHTML(item.client_name || "Не указано")}</span></div>
+      <div><strong>ТЕЛЕФОН</strong><span>${escapeHTML(item.phone || "Не указан")}</span></div>
+      <div><strong>УСЛУГА</strong><span>${escapeHTML(item.service || "Не указана")}</span></div>
+      <div><strong>КОММЕНТАРИЙ</strong><span class="booking-message">${escapeHTML(item.message || "Нет комментария")}</span></div>
     </div>
 
     <div class="booking-controls">
       <label>
         <span class="note">Статус записи</span>
         <select class="booking-status">
-          ${Object.entries(STATUS_LABELS).map(([key, label]) =>
+          ${Object.entries(STATUS_LABELS).map(([key,label]) =>
             `<option value="${key}" ${status === key ? "selected" : ""}>${label}</option>`
           ).join("")}
         </select>
       </label>
+      <button class="btn save-booking-status" type="button">СОХРАНИТЬ СТАТУС</button>
+    </div>
 
-      <button class="btn save-booking-status" type="button">
-        СОХРАНИТЬ СТАТУС
-      </button>
+    <div class="appointment-box">
+      <h4>Назначение приёма</h4>
+      <div class="appointment-grid">
+        <div>
+          <label>Дата и время приёма</label>
+          <input class="booking-appointment" type="datetime-local" value="${escapeHTML(toDateTimeLocal(item.appointment_at))}">
+        </div>
+        <div>
+          <label>Врач</label>
+          <select class="booking-staff">${staffOptions(item.staff_id)}</select>
+        </div>
+      </div>
+
+      <div class="appointment-current">
+        Сейчас назначено: ${escapeHTML(item.appointment_at ? formatDate(item.appointment_at) : "дата не выбрана")}
+        · ${escapeHTML(doctor ? doctor.name : "врач не назначен")}
+      </div>
+
+      <div class="actions">
+        <button class="btn save-booking-appointment" type="button">СОХРАНИТЬ НАЗНАЧЕНИЕ</button>
+      </div>
     </div>
 
     <div class="message booking-card-message" role="status"></div>
@@ -720,14 +561,9 @@ function bookingCard(item) {
 
 function renderBookings() {
   const filter = $("#bookingFilter").value;
+  const filtered = filter === "all" ? allBookings : allBookings.filter(item => item.status === filter);
 
-  const filtered = filter === "all"
-    ? allBookings
-    : allBookings.filter(item => item.status === filter);
-
-  $("#bookingCount").textContent =
-    `Всего: ${allBookings.length} · Показано: ${filtered.length}`;
-
+  $("#bookingCount").textContent = `Всего: ${allBookings.length} · Показано: ${filtered.length}`;
   $("#bookingsList").innerHTML = filtered.length
     ? filtered.map(bookingCard).join("")
     : '<div class="empty">Записей с таким статусом пока нет.</div>';
@@ -736,17 +572,12 @@ function renderBookings() {
 async function loadBookings() {
   const list = $("#bookingsList");
   const button = $("#refreshBookingsButton");
-
   button.disabled = true;
   list.innerHTML = '<div class="empty">Загружаем записи...</div>';
 
   try {
     const data = await api("/admin/bookings");
-
-    if (!Array.isArray(data)) {
-      throw new Error("Сервер вернул некорректный список записей.");
-    }
-
+    if (!Array.isArray(data)) throw new Error("Сервер вернул некорректный список записей.");
     allBookings = data;
     renderBookings();
     message($("#bookingsMessage"), "");
@@ -759,29 +590,58 @@ async function loadBookings() {
 }
 
 $("#refreshBookingsButton").addEventListener("click", loadBookings);
-
 $("#bookingFilter").addEventListener("change", renderBookings);
 
 $("#bookingsList").addEventListener("click", async event => {
-  const button = event.target.closest(".save-booking-status");
-  if (!button) return;
+  const statusButton = event.target.closest(".save-booking-status");
+  const appointmentButton = event.target.closest(".save-booking-appointment");
+  if (!statusButton && !appointmentButton) return;
 
+  const button = statusButton || appointmentButton;
   const card = button.closest(".booking-card");
   const id = card.dataset.id;
-  const status = card.querySelector(".booking-status").value;
   const statusMessage = card.querySelector(".booking-card-message");
 
   button.disabled = true;
   message(statusMessage, "Сохраняем...");
 
   try {
-    await api("/admin/bookings/" + id, "PUT", { status });
+    if (statusButton) {
+      const status = card.querySelector(".booking-status").value;
+      await api("/admin/bookings/" + id, "PUT", {status});
 
-    const booking = allBookings.find(item => String(item.id) === String(id));
-    if (booking) booking.status = status;
+      const booking = allBookings.find(item => String(item.id) === String(id));
+      if (booking) booking.status = status;
 
-    renderBookings();
-    message($("#bookingsMessage"), "Статус записи обновлён.", "success");
+      renderBookings();
+      message($("#bookingsMessage"), "Статус записи обновлён.", "success");
+    }
+
+    if (appointmentButton) {
+      const appointmentInput = card.querySelector(".booking-appointment");
+      const staffSelect = card.querySelector(".booking-staff");
+
+      const appointmentAt = appointmentInput.value || null;
+      const staffId = staffSelect.value ? Number(staffSelect.value) : null;
+
+      if (staffId && !appointmentAt) {
+        throw new Error("Укажи дату и время, чтобы назначить врача.");
+      }
+
+      await api("/admin/bookings/" + id, "PUT", {
+        appointment_at: appointmentAt,
+        staff_id: staffId
+      });
+
+      const booking = allBookings.find(item => String(item.id) === String(id));
+      if (booking) {
+        booking.appointment_at = appointmentAt;
+        booking.staff_id = staffId;
+      }
+
+      renderBookings();
+      message($("#bookingsMessage"), "Назначение приёма сохранено.", "success");
+    }
   } catch (error) {
     message(statusMessage, error.message, "error");
     button.disabled = false;
