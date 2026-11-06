@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -8,1311 +7,2055 @@
   <meta name="description" content="FINESSSIM Dental Studio — современная стоматология, эстетика улыбки и забота о здоровье зубов.">
   <title>FINESSSIM — Dental Studio</title>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+
     :root {
-      --cream:#f4f0e7;
-      --green:#183c32;
-      --green2:#254c3e;
-      --orange:#d76b4b;
-      --lime:#d9e5a6;
-      --ink:#202820;
-      --muted:#777a70;
-      --white:#fffdf8;
+      --cream: #f4f0e7;
+      --cream-dark: #e9e3d7;
+      --green: #183c32;
+      --green-light: #315c4e;
+      --orange: #d76b4b;
+      --lime: #d9e5a6;
+      --text: #20352e;
+      --muted: #777b70;
+      --white: #fffefa;
+      --border: rgba(24, 60, 50, .15);
+      --radius: 22px;
     }
 
-    * {box-sizing:border-box;margin:0;padding:0}
-    html {scroll-behavior:smooth}
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
 
     body {
-      background:var(--cream);
-      color:var(--ink);
-      font-family:'DM Sans',sans-serif;
-      overflow-x:hidden;
+      background: var(--cream);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      overflow-x: hidden;
     }
 
-    a {color:inherit;text-decoration:none}
-    button,input,select,textarea {font:inherit}
-    img {display:block;max-width:100%}
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    img {
+      display: block;
+      max-width: 100%;
+    }
 
     .container {
-      width:min(1240px,calc(100% - 64px));
-      margin:auto;
-    }
-
-    .topline {
-      background:var(--green);
-      color:var(--cream);
-      padding:10px 20px;
-      text-align:center;
-      font-size:11px;
-      letter-spacing:2px;
-      text-transform:uppercase;
-    }
-
-    header {
-      height:86px;
-      display:flex;
-      align-items:center;
-      border-bottom:1px solid rgba(24,60,50,.13);
-      position:relative;
-      z-index:10;
-    }
-
-    .nav {
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:30px;
-    }
-
-    .logo,.footer-logo {
-      font-family:Manrope,sans-serif;
-      font-size:25px;
-      font-weight:800;
-      letter-spacing:-1.8px;
-      color:var(--green);
-    }
-
-    .logo span,.footer-logo span {color:var(--orange)}
-
-    .navlinks {
-      display:flex;
-      align-items:center;
-      gap:34px;
-      font-size:13px;
-      font-weight:600;
-    }
-
-    .navlinks a {transition:color .2s}
-    .navlinks a:hover {color:var(--orange)}
-
-    .nav-cta {
-      background:var(--green);
-      color:white;
-      padding:14px 21px;
-      border-radius:3px;
-      font-size:12px;
-      font-weight:700;
-      transition:.25s;
-    }
-
-    .nav-cta:hover {
-      background:var(--orange);
-      transform:translateY(-2px);
-    }
-
-    .menu-btn {
-      display:none;
-      border:0;
-      background:none;
-      font-size:26px;
-      color:var(--green);
-      cursor:pointer;
-    }
-
-    .hero {padding:75px 0 85px}
-
-    .hero-top {
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      margin-bottom:30px;
+      width: min(1240px, calc(100% - 64px));
+      margin: 0 auto;
     }
 
     .eyebrow {
-      font-size:11px;
-      letter-spacing:2.4px;
-      text-transform:uppercase;
-      font-weight:700;
-      color:var(--orange);
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--orange);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .17em;
+      text-transform: uppercase;
     }
 
-    .hero-note {
-      font-size:12px;
-      color:var(--muted);
-      max-width:210px;
-      line-height:1.6;
+    .eyebrow::before {
+      content: "";
+      width: 24px;
+      height: 1px;
+      background: currentColor;
+    }
+
+    .section-title {
+      font-family: 'Manrope', sans-serif;
+      font-size: clamp(38px, 5vw, 66px);
+      line-height: 1.05;
+      letter-spacing: -.055em;
+      font-weight: 600;
+    }
+
+    .section-description {
+      max-width: 480px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.8;
+    }
+
+    .button {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      min-height: 54px;
+      padding: 0 25px;
+      border: 1px solid transparent;
+      border-radius: 100px;
+      background: var(--green);
+      color: var(--cream);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: .25s ease;
+    }
+
+    .button:hover {
+      background: var(--orange);
+      transform: translateY(-2px);
+    }
+
+    .button-light {
+      background: var(--cream);
+      color: var(--green);
+    }
+
+    .button-light:hover {
+      background: var(--lime);
+      color: var(--green);
+    }
+
+    /* HEADER */
+
+    .header {
+      position: absolute;
+      z-index: 20;
+      top: 0;
+      left: 0;
+      width: 100%;
+      border-bottom: 1px solid rgba(255,255,255,.2);
+      color: var(--cream);
+    }
+
+    .header-inner {
+      min-height: 86px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      font-family: 'Manrope', sans-serif;
+      font-size: 23px;
+      font-weight: 800;
+      letter-spacing: .08em;
+    }
+
+    .logo span {
+      display: block;
+      margin-top: 1px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 8px;
+      font-weight: 500;
+      letter-spacing: .32em;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 34px;
+    }
+
+    .nav a {
+      font-size: 12px;
+      color: rgba(255,255,255,.82);
+      transition: .2s;
+    }
+
+    .nav a:hover {
+      color: var(--lime);
+    }
+
+    .header-contact {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .header-phone {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .header-book {
+      padding: 13px 19px;
+      border: 1px solid rgba(255,255,255,.55);
+      border-radius: 50px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      transition: .2s;
+    }
+
+    .header-book:hover {
+      background: var(--cream);
+      color: var(--green);
+    }
+
+    .menu-toggle {
+      display: none;
+      border: 0;
+      background: none;
+      color: white;
+      font-size: 27px;
+      cursor: pointer;
+    }
+
+    /* HERO */
+
+    .hero {
+      position: relative;
+      min-height: 760px;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      background:
+        linear-gradient(90deg, rgba(14,39,32,.94) 0%, rgba(14,39,32,.78) 48%, rgba(14,39,32,.28) 100%),
+        url("https://images.unsplash.com/photo-1606811971618-4486d14f3f99?auto=format&fit=crop&w=2000&q=85")
+        center/cover no-repeat;
+      color: var(--cream);
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      padding-top: 90px;
+      max-width: 900px;
+    }
+
+    .hero .eyebrow {
+      color: var(--lime);
+      margin-bottom: 30px;
     }
 
     .hero h1 {
-      font-family:Manrope,sans-serif;
-      font-weight:800;
-      font-size:clamp(75px,14.5vw,190px);
-      line-height:.79;
-      letter-spacing:-.105em;
-      color:var(--green);
-      white-space:nowrap;
-      position:relative;
-      z-index:2;
+      max-width: 900px;
+      font-family: 'Manrope', sans-serif;
+      font-size: clamp(58px, 10vw, 130px);
+      line-height: .92;
+      font-weight: 600;
+      letter-spacing: -.085em;
     }
 
-    .hero h1 span {color:var(--orange)}
-
-    .hero-visual {
-      margin-top:42px;
-      height:490px;
-      position:relative;
-      overflow:hidden;
-      background:#d8d5c9;
+    .hero h1 span {
+      color: var(--lime);
     }
 
-    .hero-visual img {
-      width:100%;
-      height:100%;
-      object-fit:cover;
-      object-position:center 48%;
+    .hero-subtitle {
+      max-width: 480px;
+      margin-top: 35px;
+      color: rgba(255,255,255,.75);
+      font-size: 16px;
+      line-height: 1.8;
     }
 
-    .hero-sticker {
-      position:absolute;
-      right:35px;
-      bottom:30px;
-      width:132px;
-      height:132px;
-      border-radius:50%;
-      background:var(--lime);
-      color:var(--green);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      text-align:center;
-      font-size:12px;
-      line-height:1.4;
-      font-weight:800;
-      transform:rotate(10deg);
-      padding:20px;
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 18px;
+      margin-top: 38px;
+    }
+
+    .hero-note {
+      color: rgba(255,255,255,.7);
+      font-size: 11px;
     }
 
     .hero-bottom {
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-start;
-      padding-top:27px;
-      gap:30px;
+      position: absolute;
+      bottom: 35px;
+      left: 0;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      color: rgba(255,255,255,.6);
+      font-size: 10px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
     }
 
-    .hero-bottom p {
-      max-width:480px;
-      font-size:17px;
-      line-height:1.65;
+    /* INTRO */
+
+    .intro {
+      padding: 115px 0;
     }
 
-    .round-link {
-      width:52px;
-      height:52px;
-      border-radius:50%;
-      background:var(--orange);
-      color:white;
-      display:grid;
-      place-items:center;
-      font-size:22px;
-      transition:.25s;
+    .intro-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: end;
     }
 
-    .round-link:hover {
-      transform:rotate(45deg);
-      background:var(--green);
+    .intro h2 {
+      margin-top: 25px;
     }
 
-    .section {padding:110px 0}
-
-    .section-head {
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-end;
-      gap:30px;
-      margin-bottom:48px;
+    .intro-right {
+      padding-bottom: 7px;
     }
 
-    .section-head h2 {
-      font-family:Manrope,sans-serif;
-      font-size:clamp(42px,6vw,76px);
-      line-height:.98;
-      letter-spacing:-.065em;
-      color:var(--green);
-      max-width:700px;
+    .intro-right p {
+      max-width: 470px;
+      margin-bottom: 28px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.9;
     }
 
-    .section-head p {
-      color:var(--muted);
-      max-width:260px;
-      font-size:14px;
-      line-height:1.7;
+    .text-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 7px;
+      border-bottom: 1px solid var(--orange);
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
     }
+
+    /* SERVICES */
 
     .services {
-      background:var(--green);
-      color:var(--cream);
+      padding: 110px 0;
+      background: var(--green);
+      color: var(--cream);
     }
 
-    .services .section-head h2 {color:var(--cream)}
-    .services .section-head p {color:#bdc8bd}
+    .services-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 30px;
+      margin-bottom: 55px;
+    }
 
-    .service-grid {
-      display:grid;
-      grid-template-columns:repeat(2,1fr);
-      gap:1px;
-      background:rgba(255,255,255,.2);
-      border:1px solid rgba(255,255,255,.2);
+    .services .eyebrow {
+      color: var(--lime);
+    }
+
+    .services .section-description {
+      color: rgba(255,255,255,.65);
+    }
+
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1px;
+      background: rgba(255,255,255,.2);
+      border: 1px solid rgba(255,255,255,.2);
     }
 
     .service-card {
-      min-height:245px;
-      padding:34px;
-      background:var(--green);
-      display:flex;
-      flex-direction:column;
-      justify-content:space-between;
-      transition:background .3s;
+      min-height: 245px;
+      padding: 36px;
+      background: var(--green);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: .25s;
     }
 
-    .service-card:hover {background:var(--green2)}
+    .service-card:hover {
+      background: var(--green-light);
+    }
 
-    .service-top {
-      display:flex;
-      justify-content:space-between;
-      color:var(--lime);
-      font-size:12px;
+    .service-number {
+      color: var(--lime);
+      font-size: 11px;
+      letter-spacing: .15em;
     }
 
     .service-card h3 {
-      font-family:Manrope,sans-serif;
-      font-size:32px;
-      letter-spacing:-1.2px;
-      margin-top:45px;
+      margin-top: 35px;
+      font-family: 'Manrope', sans-serif;
+      font-size: clamp(23px, 3vw, 34px);
+      font-weight: 500;
+      letter-spacing: -.04em;
     }
 
     .service-card p {
-      color:#bdc8bd;
-      font-size:13px;
-      line-height:1.6;
-      max-width:390px;
-      margin-top:10px;
+      max-width: 400px;
+      margin-top: 12px;
+      color: rgba(255,255,255,.65);
+      font-size: 13px;
+      line-height: 1.7;
     }
 
-    .service-arrow {
-      font-size:24px;
-      color:var(--orange);
+    .service-meta {
+      margin-top: 22px;
+      color: var(--lime);
+      font-size: 11px;
+    }
+
+    .empty-data {
+      padding: 35px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    /* ABOUT */
+
+    .about {
+      padding: 120px 0;
     }
 
     .about-grid {
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:85px;
-      align-items:center;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
     }
 
     .about-image {
-      height:570px;
-      overflow:hidden;
-      background:#d6d0c4;
+      min-height: 520px;
+      background:
+        url("https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=1200&q=85")
+        center/cover;
+      border-radius: 3px;
     }
 
-    .about-image img {
-      width:100%;
-      height:100%;
-      object-fit:cover;
+    .about-content h2 {
+      margin: 25px 0;
     }
 
-    .about-copy h2 {
-      font-family:Manrope,sans-serif;
-      font-size:clamp(42px,5vw,65px);
-      color:var(--green);
-      line-height:1;
-      letter-spacing:-.06em;
-      margin:20px 0 25px;
+    .about-content p {
+      max-width: 480px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.9;
     }
 
-    .about-copy>p {
-      color:#686d64;
-      font-size:15px;
-      line-height:1.9;
+    .about-points {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 25px;
+      margin-top: 42px;
     }
 
-    .values {
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:25px;
-      margin-top:42px;
+    .about-point strong {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--orange);
+      font-family: 'Manrope', sans-serif;
+      font-size: 26px;
     }
 
-    .value {
-      border-top:1px solid rgba(24,60,50,.25);
-      padding-top:15px;
+    .about-point span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
     }
 
-    .value strong {
-      display:block;
-      color:var(--green);
-      font-family:Manrope,sans-serif;
-      font-size:28px;
+    /* STAFF */
+
+    .staff {
+      padding: 110px 0;
+      background: var(--cream-dark);
     }
 
-    .value span {
-      color:var(--muted);
-      font-size:12px;
+    .staff-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 30px;
+      margin-bottom: 45px;
     }
 
-    .doctors {background:#e9e5da}
-
-    .doctor-grid {
-      display:grid;
-      grid-template-columns:repeat(2,1fr);
-      gap:25px;
+    .staff-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 28px;
     }
 
-    .doctor-photo {
-      height:420px;
-      background:#d5d0c4;
-      overflow:hidden;
+    .staff-card {
+      background: var(--cream);
+      overflow: hidden;
     }
 
-    .doctor-photo img {
-      width:100%;
-      height:100%;
-      object-fit:cover;
-      transition:transform .5s;
+    .staff-photo {
+      height: 390px;
+      background: #d9d5c9;
+      overflow: hidden;
     }
 
-    .doctor-card:hover .doctor-photo img {transform:scale(1.04)}
-
-    .doctor-info {
-      padding:20px 0;
-      display:flex;
-      justify-content:space-between;
-      gap:15px;
+    .staff-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform .5s;
     }
 
-    .doctor-info h3 {
-      color:var(--green);
-      font-family:Manrope,sans-serif;
-      font-size:23px;
+    .staff-card:hover .staff-photo img {
+      transform: scale(1.04);
     }
 
-    .doctor-info p {
-      color:var(--muted);
-      font-size:12px;
-      margin-top:6px;
+    .staff-placeholder {
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: var(--green);
+      font-family: 'Manrope', sans-serif;
+      font-size: 55px;
     }
 
-    .doctor-number {
-      color:var(--orange);
-      font-size:13px;
-      font-weight:700;
+    .staff-info {
+      padding: 26px;
     }
+
+    .staff-info h3 {
+      font-family: 'Manrope', sans-serif;
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    .staff-info p {
+      margin-top: 8px;
+      color: var(--orange);
+      font-size: 12px;
+      letter-spacing: .04em;
+    }
+
+    .staff-description {
+      margin-top: 14px;
+      color: var(--muted) !important;
+      font-size: 13px !important;
+      line-height: 1.7;
+    }
+
+    /* MANIFESTO */
 
     .manifesto {
-      background:var(--orange);
-      color:var(--green);
-      padding:100px 0;
-      text-align:center;
+      padding: 120px 0;
+      background: var(--lime);
+      text-align: center;
     }
 
-    .manifesto .eyebrow {color:#f8e9d9}
+    .manifesto .eyebrow {
+      justify-content: center;
+      color: var(--green);
+    }
 
     .manifesto h2 {
-      font-family:Manrope,sans-serif;
-      font-size:clamp(43px,7vw,90px);
-      letter-spacing:-.075em;
-      line-height:.98;
-      max-width:950px;
-      margin:30px auto;
+      max-width: 900px;
+      margin: 30px auto 0;
+      font-family: 'Manrope', sans-serif;
+      font-size: clamp(37px, 6vw, 75px);
+      line-height: 1.08;
+      font-weight: 600;
+      letter-spacing: -.06em;
     }
 
     .manifesto p {
-      max-width:530px;
-      margin:auto;
-      font-size:15px;
-      line-height:1.8;
+      max-width: 550px;
+      margin: 25px auto 0;
+      color: rgba(24,60,50,.72);
+      font-size: 14px;
+      line-height: 1.8;
     }
 
+    /* BOOKING */
+
     .booking {
-      background:var(--green);
-      color:var(--cream);
+      padding: 120px 0;
+      background: var(--cream);
     }
 
     .booking-grid {
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:90px;
+      display: grid;
+      grid-template-columns: .85fr 1.15fr;
+      gap: 90px;
+      align-items: start;
     }
 
-    .booking h2 {
-      font-family:Manrope,sans-serif;
-      font-size:clamp(45px,6vw,75px);
-      line-height:.95;
-      letter-spacing:-.07em;
-      margin:20px 0 25px;
+    .booking-copy h2 {
+      margin-top: 25px;
     }
 
-    .booking-copy p {
-      color:#c2cec4;
-      max-width:400px;
-      font-size:14px;
-      line-height:1.8;
+    .booking-copy > p {
+      max-width: 400px;
+      margin-top: 25px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.9;
     }
 
-    .contact-lines {
-      margin-top:45px;
-      display:grid;
-      gap:18px;
+    .booking-details {
+      margin-top: 45px;
+      display: grid;
+      gap: 22px;
     }
 
-    .contact-lines span {
-      color:#b8c5bb;
-      font-size:11px;
-      text-transform:uppercase;
-      letter-spacing:1.5px;
-      display:block;
-      margin-bottom:5px;
+    .booking-detail span {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--orange);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .13em;
+      text-transform: uppercase;
     }
 
-    .contact-lines a,.contact-lines strong {
-      color:white;
-      font-size:16px;
-      font-weight:600;
+    .booking-detail strong {
+      font-size: 14px;
+      font-weight: 600;
     }
 
     .booking-form {
-      background:var(--cream);
-      color:var(--green);
-      padding:38px;
+      padding: 42px;
+      background: var(--white);
+      border: 1px solid var(--border);
     }
 
-    .booking-form h3 {
-      font-family:Manrope,sans-serif;
-      font-size:27px;
-      margin-bottom:25px;
+    .form-heading {
+      margin-bottom: 30px;
+      font-family: 'Manrope', sans-serif;
+      font-size: 27px;
+      font-weight: 600;
+      letter-spacing: -.04em;
     }
 
-    .field {margin-bottom:18px}
-
-    .field label {
-      display:block;
-      font-size:11px;
-      color:#73786e;
-      margin-bottom:8px;
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
     }
 
-    .field input,.field select,.field textarea {
-      width:100%;
-      border:0;
-      border-bottom:1px solid #c8c9bd;
-      background:transparent;
-      padding:12px 0;
-      outline:none;
-      color:var(--green);
-      border-radius:0;
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      margin-bottom: 19px;
     }
 
-    .field input:focus,.field select:focus,.field textarea:focus {
-      border-color:var(--orange);
+    .form-field.full {
+      grid-column: 1 / -1;
     }
 
-    .submit {
-      width:100%;
-      border:0;
-      background:var(--orange);
-      color:white;
-      padding:17px;
-      font-weight:700;
-      cursor:pointer;
-      margin-top:10px;
-      transition:.25s;
+    .form-field label {
+      color: var(--green);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .04em;
     }
 
-    .submit:hover {background:var(--green)}
-    .submit:disabled {opacity:.65;cursor:wait}
-
-    .form-note {
-      color:#85877d;
-      font-size:10px;
-      line-height:1.5;
-      margin-top:15px;
+    .form-field input,
+    .form-field select,
+    .form-field textarea {
+      width: 100%;
+      min-height: 52px;
+      padding: 13px 15px;
+      border: 1px solid var(--border);
+      border-radius: 0;
+      outline: none;
+      background: var(--cream);
+      color: var(--green);
+      font-size: 13px;
+      transition: border .2s;
     }
 
-    .booking-status {
-      font-size:13px;
-      line-height:1.6;
-      margin:14px 0;
-      min-height:20px;
+    .form-field textarea {
+      min-height: 95px;
+      resize: vertical;
+    }
+
+    .form-field input:focus,
+    .form-field select:focus,
+    .form-field textarea:focus {
+      border-color: var(--orange);
+    }
+
+    .form-field input:disabled,
+    .form-field select:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+    .availability-message {
+      min-height: 20px;
+      margin: -5px 0 18px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .availability-message.error {
+      color: #b34432;
+    }
+
+    .availability-message.success {
+      color: var(--green-light);
+    }
+
+    .booking-form .button {
+      width: 100%;
+      margin-top: 7px;
+    }
+
+    .booking-form .button:disabled {
+      opacity: .6;
+      cursor: wait;
+      transform: none;
+    }
+
+    .form-privacy {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.6;
+      text-align: center;
     }
 
     .honeypot {
-      position:absolute;
-      left:-9999px;
-      width:1px;
-      height:1px;
-      overflow:hidden;
+      position: absolute;
+      left: -9999px;
+      opacity: 0;
+      pointer-events: none;
     }
 
-    footer {
-      background:#112d25;
-      color:var(--cream);
-      padding:35px 0;
+    /* FOOTER */
+
+    .footer {
+      padding: 65px 0 30px;
+      background: var(--green);
+      color: var(--cream);
     }
 
-    .footer-row {
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:25px;
+    .footer-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 40px;
+      padding-bottom: 55px;
     }
 
-    .footer-logo {color:var(--cream)}
+    .footer-logo {
+      font-family: 'Manrope', sans-serif;
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: .05em;
+    }
 
-    footer p {
-      color:#aebbb1;
-      font-size:11px;
+    .footer-logo span {
+      display: block;
+      margin-top: 3px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 9px;
+      letter-spacing: .3em;
+    }
+
+    .footer-description {
+      max-width: 280px;
+      margin-top: 20px;
+      color: rgba(255,255,255,.6);
+      font-size: 12px;
+      line-height: 1.8;
     }
 
     .footer-links {
-      display:flex;
-      gap:22px;
-      font-size:12px;
+      display: flex;
+      gap: 65px;
     }
 
+    .footer-column h4 {
+      margin-bottom: 20px;
+      color: var(--lime);
+      font-size: 10px;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+
+    .footer-column a,
+    .footer-column p {
+      display: block;
+      margin-bottom: 12px;
+      color: rgba(255,255,255,.72);
+      font-size: 12px;
+    }
+
+    .footer-column a:hover {
+      color: var(--lime);
+    }
+
+    .footer-bottom {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding-top: 22px;
+      border-top: 1px solid rgba(255,255,255,.2);
+      color: rgba(255,255,255,.5);
+      font-size: 10px;
+    }
+
+    /* ANIMATIONS */
+
     .reveal {
-      opacity:0;
-      transform:translateY(25px);
-      transition:opacity .7s,transform .7s;
+      opacity: 0;
+      transform: translateY(25px);
+      transition: opacity .7s ease, transform .7s ease;
     }
 
     .reveal.visible {
-      opacity:1;
-      transform:translateY(0);
+      opacity: 1;
+      transform: translateY(0);
     }
 
-    @media(max-width:850px) {
-      .container {width:min(100% - 38px,650px)}
+    /* RESPONSIVE */
 
-      .navlinks {
-        display:none;
-        position:absolute;
-        top:85px;
-        left:0;
-        right:0;
-        background:var(--cream);
-        padding:25px;
-        flex-direction:column;
-        align-items:flex-start;
-        border-bottom:1px solid #ddd;
+    @media (max-width: 900px) {
+      .nav {
+        gap: 18px;
       }
 
-      .navlinks.open {display:flex}
-      .nav-cta {display:none}
-      .menu-btn {display:block}
-      .hero {padding:55px 0}
-      .hero h1 {font-size:15vw}
-      .hero-visual {height:390px}
-      .hero-note {display:none}
-      .section {padding:75px 0}
-
-      .about-grid,.booking-grid {
-        grid-template-columns:1fr;
-        gap:40px;
+      .header-phone {
+        display: none;
       }
 
-      .about-image {height:430px}
-      .booking-grid {gap:45px}
+      .intro-grid,
+      .about-grid,
+      .booking-grid {
+        grid-template-columns: 1fr;
+        gap: 45px;
+      }
+
+      .about-image {
+        min-height: 420px;
+      }
+
+      .booking-grid {
+        gap: 55px;
+      }
     }
 
-    @media(max-width:560px) {
-      .topline {font-size:9px;letter-spacing:1.2px}
-      header {height:72px}
-      .logo {font-size:22px}
-      .hero h1 {font-size:14.5vw}
-      .hero-visual {height:310px;margin-top:28px}
-
-      .hero-sticker {
-        width:95px;
-        height:95px;
-        right:15px;
-        bottom:15px;
-        font-size:10px;
+    @media (max-width: 650px) {
+      .container {
+        width: min(100% - 36px, 1240px);
       }
 
-      .hero-bottom {align-items:center}
-      .hero-bottom p {font-size:14px}
-      .section-head {display:block}
-      .section-head p {margin-top:20px}
-      .service-grid,.doctor-grid {grid-template-columns:1fr}
-      .service-card {min-height:210px;padding:25px}
-      .service-card h3 {font-size:27px}
-      .doctor-photo {height:370px}
-      .values {gap:18px}
-      .booking-form {padding:25px}
-
-      .footer-row {
-        flex-direction:column;
-        align-items:flex-start;
+      .header-inner {
+        min-height: 72px;
       }
 
-      .footer-links {flex-wrap:wrap}
-    }
+      .menu-toggle {
+        display: block;
+      }
 
-    @media(prefers-reduced-motion:reduce) {
-      html {scroll-behavior:auto}
-      *,*::before,*::after {
-        animation-duration:.01ms !important;
-        transition-duration:.01ms !important;
+      .nav {
+        position: absolute;
+        top: 72px;
+        left: 0;
+        right: 0;
+        display: none;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+        padding: 10px 22px 20px;
+        background: var(--green);
+      }
+
+      .nav.open {
+        display: flex;
+      }
+
+      .nav a {
+        padding: 14px 0;
+        border-bottom: 1px solid rgba(255,255,255,.13);
+      }
+
+      .header-contact {
+        display: none;
+      }
+
+      .hero {
+        min-height: 690px;
+        background-position: 58% center;
+      }
+
+      .hero h1 {
+        font-size: clamp(54px, 16vw, 86px);
+      }
+
+      .hero-subtitle {
+        font-size: 14px;
+      }
+
+      .hero-bottom {
+        font-size: 8px;
+      }
+
+      .intro,
+      .about,
+      .booking {
+        padding: 80px 0;
+      }
+
+      .services,
+      .staff,
+      .manifesto {
+        padding: 80px 0;
+      }
+
+      .services-header,
+      .staff-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .services-grid,
+      .staff-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .service-card {
+        min-height: 220px;
+        padding: 27px;
+      }
+
+      .staff-photo {
+        height: 330px;
+      }
+
+      .about-image {
+        min-height: 340px;
+      }
+
+      .booking-form {
+        padding: 25px 19px;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+        gap: 0;
+      }
+
+      .form-field.full {
+        grid-column: auto;
+      }
+
+      .footer-top {
+        flex-direction: column;
+      }
+
+      .footer-links {
+        flex-wrap: wrap;
+        gap: 35px;
+      }
+
+      .footer-bottom {
+        flex-direction: column;
       }
     }
   </style>
 </head>
 
 <body>
-  <div class="topline">A new perspective on your smile · FINESSSIM Dental Studio</div>
 
-  <header>
-    <div class="container nav">
-      <a href="#" class="logo">FINESSSIM<span>.</span></a>
+  <!-- HEADER -->
 
-      <nav class="navlinks" id="navlinks">
+  <header class="header">
+    <div class="container header-inner">
+
+      <a href="#" class="logo">
+        FINESSSIM
+        <span>DENTAL STUDIO</span>
+      </a>
+
+      <nav class="nav" id="navigation">
         <a href="#services">Услуги</a>
         <a href="#about">О студии</a>
-        <a href="#doctors">Команда</a>
-        <a href="#contacts">Контакты</a>
+        <a href="#team">Специалисты</a>
+        <a href="#booking">Запись</a>
       </nav>
 
-      <a class="nav-cta" href="#contacts">Записаться ↗</a>
-      <button class="menu-btn" id="menuBtn" aria-label="Открыть меню">☰</button>
+      <div class="header-contact">
+        <a href="#booking" class="header-book">Записаться</a>
+      </div>
+
+      <button class="menu-toggle" id="menuToggle" aria-label="Открыть меню">
+        ☰
+      </button>
+
     </div>
   </header>
 
-  <main>
-    <section class="hero container">
-      <div class="hero-top">
-        <span class="eyebrow">Dentistry, reimagined — 01 / 05</span>
-        <p class="hero-note">Улыбка — это не просто эстетика. Это ощущение уверенности в себе.</p>
+
+  <!-- HERO -->
+
+  <section class="hero">
+    <div class="container hero-content">
+
+      <div class="eyebrow">
+        Dental studio · Эстетика и здоровье
       </div>
 
-      <h1>FINESSSIM<span>.</span></h1>
+      <h1>
+        FINESS<br>
+        <span>SIM.</span>
+      </h1>
 
-      <div class="hero-visual">
-        <img
-          src="https://images.unsplash.com/photo-1606811971618-4486d14f3f99?auto=format&fit=crop&w=1800&q=90"
-          alt="Современная стоматологическая клиника"
-        >
-        <div class="hero-sticker">SMILE<br>MORE.<br>WORRY<br>LESS.</div>
+      <p class="hero-subtitle">
+        Пространство современной стоматологии,
+        где профессиональный подход встречается
+        с вниманием к деталям и заботой о вашей улыбке.
+      </p>
+
+      <div class="hero-actions">
+        <a href="#booking" class="button button-light">
+          Записаться на приём <span>↗</span>
+        </a>
+
+        <span class="hero-note">
+          Ваша улыбка заслуживает большего.
+        </span>
       </div>
 
-      <div class="hero-bottom">
-        <p>Современная стоматология с вниманием к деталям. Заботимся о здоровье, создаём эстетику и возвращаем удовольствие от улыбки.</p>
-        <a class="round-link" href="#services" aria-label="Услуги">↘</a>
-      </div>
-    </section>
+    </div>
 
-    <section class="section services" id="services">
-      <div class="container">
-        <div class="section-head reveal">
-          <div>
-            <span class="eyebrow">What we do — 02 / 05</span>
-            <h2>Искусство<br>здоровой улыбки.</h2>
+    <div class="container hero-bottom">
+      <span>FINESSSIM DENTAL STUDIO</span>
+      <span>Современная стоматология</span>
+    </div>
+  </section>
+
+
+  <!-- INTRO -->
+
+  <section class="intro">
+    <div class="container intro-grid">
+
+      <div class="reveal">
+        <div class="eyebrow">Наша философия</div>
+
+        <h2 class="section-title">
+          Улыбка — это<br>
+          больше, чем<br>
+          эстетика.
+        </h2>
+      </div>
+
+      <div class="intro-right reveal">
+        <p>
+          Мы верим, что качественная стоматология начинается
+          с внимания к человеку. Поэтому для нас важны не
+          только результат лечения, но и комфорт на каждом
+          этапе взаимодействия.
+        </p>
+
+        <a href="#about" class="text-link">
+          Познакомиться со студией ↗
+        </a>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- SERVICES -->
+
+  <section class="services" id="services">
+    <div class="container">
+
+      <div class="services-header reveal">
+        <div>
+          <div class="eyebrow">Что мы предлагаем</div>
+          <h2 class="section-title" style="margin-top:22px;">
+            Наши услуги.
+          </h2>
+        </div>
+
+        <p class="section-description">
+          Комплексный подход к здоровью зубов
+          и эстетике вашей улыбки.
+        </p>
+      </div>
+
+      <div class="services-grid" id="servicesGrid">
+        <div class="empty-data">Загружаем услуги...</div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ABOUT -->
+
+  <section class="about" id="about">
+    <div class="container about-grid">
+
+      <div class="about-image reveal"></div>
+
+      <div class="about-content reveal">
+        <div class="eyebrow">FINESSSIM Dental Studio</div>
+
+        <h2 class="section-title">
+          Забота,<br>
+          которую<br>
+          вы чувствуете.
+        </h2>
+
+        <p>
+          Мы стремимся сделать посещение стоматолога
+          спокойным и понятным процессом. Объясняем
+          каждый этап, внимательно относимся к пожеланиям
+          пациентов и подбираем решения с учётом
+          индивидуальной ситуации.
+        </p>
+
+        <div class="about-points">
+          <div class="about-point">
+            <strong>01</strong>
+            <span>Внимательное отношение к каждому пациенту</span>
           </div>
-          <p>Комплексный подход к здоровью зубов и эстетике улыбки. Подбираем решение под ваши задачи.</p>
-        </div>
 
-        <div class="service-grid" id="serviceGrid">
-          <article class="service-card">
-            <div class="service-top">
-              <span>01 / CARE</span>
-              <span class="service-arrow">↗</span>
-            </div>
-            <div>
-              <h3>Услуги</h3>
-              <p>Загружаем услуги...</p>
-            </div>
-          </article>
-        </div>
-      </div>
-    </section>
+          <div class="about-point">
+            <strong>02</strong>
+            <span>Современный подход к лечению</span>
+          </div>
 
-    <section class="section" id="about">
-      <div class="container about-grid">
-        <div class="about-image reveal">
-          <img
-            src="https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=1100&q=85"
-            alt="Интерьер современной стоматологии"
-            loading="lazy"
-          >
-        </div>
+          <div class="about-point">
+            <strong>03</strong>
+            <span>Понятные рекомендации и план лечения</span>
+          </div>
 
-        <div class="about-copy reveal">
-          <span class="eyebrow">Our philosophy — 03 / 05</span>
-          <h2>Больше, чем просто стоматология.</h2>
-          <p>FINESSSIM — пространство, где современные технологии встречаются с человеческим отношением. Мы верим, что качественная стоматология начинается с диалога, внимательной диагностики и понятного плана лечения.</p>
-
-          <div class="values">
-            <div class="value"><strong>01</strong><span>Индивидуальный подход</span></div>
-            <div class="value"><strong>02</strong><span>Внимание к деталям</span></div>
-            <div class="value"><strong>03</strong><span>Современные технологии</span></div>
-            <div class="value"><strong>04</strong><span>Комфортная атмосфера</span></div>
+          <div class="about-point">
+            <strong>04</strong>
+            <span>Комфортная атмосфера студии</span>
           </div>
         </div>
       </div>
-    </section>
 
-    <section class="section doctors" id="doctors">
-      <div class="container">
-        <div class="section-head reveal">
-          <div>
-            <span class="eyebrow">Meet the team — 04 / 05</span>
-            <h2>Люди, которым<br>можно доверять.</h2>
-          </div>
-          <p>За каждой красивой улыбкой стоит команда специалистов, которым важен результат и ваше спокойствие.</p>
+    </div>
+  </section>
+
+
+  <!-- STAFF -->
+
+  <section class="staff" id="team">
+    <div class="container">
+
+      <div class="staff-header reveal">
+        <div>
+          <div class="eyebrow">Наша команда</div>
+          <h2 class="section-title" style="margin-top:22px;">
+            Специалисты.
+          </h2>
         </div>
 
-        <div class="doctor-grid" id="doctorGrid">
-          <article class="doctor-card">
-            <div class="doctor-photo">
-              <img
-                src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=900&q=85"
-                alt="Врач стоматолог"
-                loading="lazy"
-              >
-            </div>
-            <div class="doctor-info">
-              <div>
-                <h3>Команда FINESSSIM</h3>
-                <p>Загружаем специалистов...</p>
-              </div>
-              <span class="doctor-number">01</span>
-            </div>
-          </article>
+        <p class="section-description">
+          Люди, которые заботятся о здоровье
+          и комфорте вашей улыбки.
+        </p>
+      </div>
+
+      <div class="staff-grid" id="staffGrid">
+        <div class="empty-data">Загружаем специалистов...</div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- MANIFESTO -->
+
+  <section class="manifesto">
+    <div class="container reveal">
+
+      <div class="eyebrow">Наш принцип</div>
+
+      <h2>
+        Красота начинается<br>
+        с заботы о себе.
+      </h2>
+
+      <p>
+        Мы хотим, чтобы визит к стоматологу
+        стал понятной и комфортной частью
+        заботы о собственном здоровье.
+      </p>
+
+    </div>
+  </section>
+
+
+  <!-- BOOKING -->
+
+  <section class="booking" id="booking">
+    <div class="container booking-grid">
+
+      <div class="booking-copy reveal">
+        <div class="eyebrow">Начните с первого шага</div>
+
+        <h2 class="section-title">
+          Запись<br>
+          на приём.
+        </h2>
+
+        <p>
+          Выберите услугу, специалиста и удобное время.
+          После отправки заявки мы свяжемся с вами
+          для подтверждения записи.
+        </p>
+
+        <div class="booking-details">
+
+          <div class="booking-detail">
+            <span>График работы</span>
+            <strong>Понедельник — пятница · 09:00–18:00</strong>
+          </div>
+
+          <div class="booking-detail">
+            <span>Выходные</span>
+            <strong>Суббота и воскресенье · выходные</strong>
+          </div>
+
+          <div class="booking-detail">
+            <span>Формат</span>
+            <strong>Предварительная запись</strong>
+          </div>
+
         </div>
       </div>
-    </section>
 
-    <section class="manifesto">
-      <div class="container reveal">
-        <span class="eyebrow">The FINESSSIM feeling</span>
-        <h2>Улыбайтесь.<br>Это вам к лицу.</h2>
-        <p>Ваша улыбка заслуживает внимания. Начните с консультации — вместе найдём подходящее решение.</p>
-      </div>
-    </section>
 
-    <section class="section booking" id="contacts">
-      <div class="container booking-grid">
-        <div class="booking-copy reveal">
-          <span class="eyebrow">Let's talk — 05 / 05</span>
-          <h2>Время<br>улыбаться.</h2>
-          <p>Оставьте заявку, и мы свяжемся с вами, чтобы обсудить удобное время визита.</p>
+      <form class="booking-form reveal" id="bookingForm">
 
-          <div class="contact-lines">
-            <div>
-              <span>Телефон</span>
-              <a id="sitePhone" href="tel:+77770553737">+7 (777) 055-37-37</a>
-            </div>
+        <h3 class="form-heading">
+          Заполните форму
+        </h3>
 
-            <div>
-              <span>Адрес</span>
-              <strong id="siteAddress">Нижний Новгород, ул. Сорокина, 10</strong>
-            </div>
+        <div class="form-grid">
 
-            <div>
-              <span>График</span>
-              <strong id="siteHours">Пн–Пт · 09:00–18:00</strong>
-            </div>
-          </div>
-        </div>
-
-        <form class="booking-form reveal" id="bookingForm">
-          <h3>Оставить заявку</h3>
-
-          <div class="field">
-            <label for="name">Ваше имя</label>
+          <div class="form-field">
+            <label for="name">Ваше имя *</label>
             <input
+              type="text"
               id="name"
               name="name"
-              type="text"
+              placeholder="Как к вам обращаться?"
               maxlength="120"
               autocomplete="name"
-              placeholder="Как к вам обращаться?"
               required
             >
           </div>
 
-          <div class="field">
-            <label for="phone">Номер телефона</label>
+          <div class="form-field">
+            <label for="phone">Номер телефона *</label>
             <input
+              type="tel"
               id="phone"
               name="phone"
-              type="tel"
+              placeholder="+7 (___) ___-__-__"
               maxlength="40"
               autocomplete="tel"
-              placeholder="+7 (___) ___-__-__"
               required
             >
           </div>
 
-          <div class="field">
-            <label for="service">Выберите услугу</label>
+          <div class="form-field full">
+            <label for="service">Услуга *</label>
             <select id="service" name="service" required>
-              <option value="">Загрузка услуг...</option>
+              <option value="">Сначала выберите услугу</option>
             </select>
           </div>
 
-          <div class="field">
-            <label for="message">Комментарий (необязательно)</label>
+          <div class="form-field full">
+            <label for="staff">Специалист *</label>
+            <select id="staff" name="staff" required disabled>
+              <option value="">Сначала выберите специалиста</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="appointmentDate">Дата приёма *</label>
+            <input
+              type="date"
+              id="appointmentDate"
+              name="appointmentDate"
+              required
+              disabled
+            >
+          </div>
+
+          <div class="form-field">
+            <label for="appointmentTime">Свободное время *</label>
+            <select
+              id="appointmentTime"
+              name="appointmentTime"
+              required
+              disabled
+            >
+              <option value="">Выберите дату и специалиста</option>
+            </select>
+          </div>
+
+          <div class="form-field full">
+            <div
+              class="availability-message"
+              id="availabilityMessage"
+              aria-live="polite"
+            >
+              Выберите услугу, специалиста и дату, чтобы увидеть свободное время.
+            </div>
+          </div>
+
+          <div class="form-field full">
+            <label for="message">Комментарий</label>
             <textarea
               id="message"
               name="message"
-              rows="2"
+              placeholder="Опишите ваш вопрос или пожелания (необязательно)"
               maxlength="2000"
-              placeholder="Ваш вопрос или пожелания"
             ></textarea>
           </div>
 
           <div class="honeypot" aria-hidden="true">
             <label for="website">Не заполняйте это поле</label>
             <input
+              type="text"
               id="website"
               name="website"
-              type="text"
               tabindex="-1"
               autocomplete="off"
             >
           </div>
 
-          <p
-            id="bookingStatus"
-            class="booking-status"
-            role="status"
-            aria-live="polite"
-          ></p>
+        </div>
 
-          <button class="submit" type="submit">
-            Отправить заявку ↗
-          </button>
+        <button
+          type="submit"
+          class="button"
+          id="bookingSubmit"
+        >
+          Отправить заявку <span>↗</span>
+        </button>
 
-          <p class="form-note">
-            Отправляя заявку, вы соглашаетесь на обработку указанных данных
-            для связи с вами. Мы свяжемся с вами для обсуждения времени визита.
+        <p class="form-privacy">
+          Отправляя форму, вы соглашаетесь на обработку
+          предоставленных контактных данных для связи
+          по поводу записи.
+        </p>
+
+        <div
+          class="availability-message"
+          id="bookingStatus"
+          role="status"
+          aria-live="polite"
+          style="margin-top:18px;text-align:center;"
+        ></div>
+
+      </form>
+
+    </div>
+  </section>
+
+
+  <!-- FOOTER -->
+
+  <footer class="footer">
+    <div class="container">
+
+      <div class="footer-top">
+
+        <div>
+          <div class="footer-logo">
+            FINESSSIM
+            <span>DENTAL STUDIO</span>
+          </div>
+
+          <p class="footer-description">
+            Современная стоматология.
+            Внимание к деталям. Забота о вашей улыбке.
           </p>
-        </form>
-      </div>
-    </section>
-  </main>
+        </div>
 
-  <footer>
-    <div class="container footer-row">
-      <a href="#" class="footer-logo">FINESSSIM<span>.</span></a>
-      <p>© 2026 FINESSSIM Dental Studio.</p>
+        <div class="footer-links">
 
-      <div class="footer-links">
-        <a href="#services">Услуги</a>
-        <a href="#about">О нас</a>
-        <a href="#contacts">Контакты</a>
+          <div class="footer-column">
+            <h4>Навигация</h4>
+            <a href="#services">Услуги</a>
+            <a href="#about">О студии</a>
+            <a href="#team">Специалисты</a>
+            <a href="#booking">Запись</a>
+          </div>
+
+          <div class="footer-column">
+            <h4>Контакты</h4>
+            <p id="footerPhone">Свяжитесь с нами</p>
+            <p id="footerAddress">Адрес уточняется</p>
+            <p>Пн–Пт · 09:00–18:00</p>
+          </div>
+
+        </div>
       </div>
+
+      <div class="footer-bottom">
+        <span>© <span id="currentYear"></span> FINESSSIM Dental Studio</span>
+        <span>Здоровье и эстетика вашей улыбки</span>
+      </div>
+
     </div>
   </footer>
 
+
   <script>
-    'use strict';
+    // ------------------------------
+    // Элементы страницы
+    // ------------------------------
 
-    // Мобильное меню
-    const menuBtn = document.getElementById('menuBtn');
-    const navlinks = document.getElementById('navlinks');
+    const bookingForm = document.getElementById("bookingForm");
 
-    menuBtn.addEventListener('click', () => {
-      const isOpen = navlinks.classList.toggle('open');
-      menuBtn.setAttribute('aria-expanded', String(isOpen));
-    });
+    const nameInput = document.getElementById("name");
+    const phoneInput = document.getElementById("phone");
+    const serviceSelect = document.getElementById("service");
+    const staffSelect = document.getElementById("staff");
+    const dateInput = document.getElementById("appointmentDate");
+    const timeSelect = document.getElementById("appointmentTime");
+    const messageInput = document.getElementById("message");
+    const websiteInput = document.getElementById("website");
 
-    navlinks.querySelectorAll('a').forEach(link => {
-      link.addEventListener('click', () => {
-        navlinks.classList.remove('open');
-        menuBtn.setAttribute('aria-expanded', 'false');
-      });
-    });
+    const availabilityMessage =
+      document.getElementById("availabilityMessage");
 
-    // Анимация появления блоков
-    if ('IntersectionObserver' in window) {
-      const observer = new IntersectionObserver(entries => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
-            observer.unobserve(entry.target);
-          }
-        });
-      }, { threshold: 0.12 });
+    const bookingStatus =
+      document.getElementById("bookingStatus");
 
-      document.querySelectorAll('.reveal').forEach(element => {
-        observer.observe(element);
-      });
-    } else {
-      document.querySelectorAll('.reveal').forEach(element => {
-        element.classList.add('visible');
-      });
+    const bookingSubmit =
+      document.getElementById("bookingSubmit");
+
+    let servicesData = [];
+    let staffData = [];
+
+    let availabilityRequestNumber = 0;
+
+
+    // ------------------------------
+    // Безопасный вывод текста
+    // ------------------------------
+
+    function escapeHTML(value) {
+      return String(value ?? "").replace(
+        /[&<>"']/g,
+        character => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#039;"
+        })[character]
+      );
     }
 
-    // Резервные фотографии специалистов
-    const fallbackDoctorImages = [
-      'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=900&q=85',
-      'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=900&q=85'
-    ];
 
-    // Проверка адреса изображения
-    function safeImageUrl(url, fallback) {
-      if (typeof url !== 'string') return fallback;
+    // ------------------------------
+    // Московская дата
+    // ------------------------------
 
-      try {
-        const parsed = new URL(url);
+    function getMoscowDate() {
+      const parts = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Europe/Moscow",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+      }).formatToParts(new Date());
 
-        if (
-          parsed.protocol === 'https:' ||
-          parsed.protocol === 'http:'
-        ) {
-          return parsed.href;
-        }
-      } catch (_) {}
+      const values = Object.fromEntries(
+        parts.map(part => [part.type, part.value])
+      );
 
-      return fallback;
+      return `${values.year}-${values.month}-${values.day}`;
     }
 
-    // Отображение настроек студии
-    function renderSettings(settings) {
-      const studioName =
-        settings.studio_name || 'FINESSSIM Dental Studio';
-
-      const phone = settings.phone || '';
-      const address = settings.address || '';
-      const hours = settings.working_hours || '';
-
-      document.title = studioName + ' — Dental Studio';
-
-      document.querySelectorAll('.logo, .footer-logo').forEach(logo => {
-        logo.textContent = studioName
-          .replace(/\s*Dental Studio\s*/i, '')
-          .trim();
-
-        const dot = document.createElement('span');
-        dot.textContent = '.';
-        logo.appendChild(dot);
-      });
-
-      const topline = document.querySelector('.topline');
-
-      if (topline) {
-        topline.textContent =
-          'A new perspective on your smile · ' + studioName;
-      }
-
-      const phoneElement = document.getElementById('sitePhone');
-
-      if (phoneElement && phone) {
-        phoneElement.textContent = phone;
-        phoneElement.href = 'tel:' + phone.replace(/[^\d+]/g, '');
-      }
-
-      const addressElement = document.getElementById('siteAddress');
-
-      if (addressElement && address) {
-        addressElement.textContent = address;
-      }
-
-      const hoursElement = document.getElementById('siteHours');
-
-      if (hoursElement && hours) {
-        hoursElement.textContent = hours;
-      }
+    function setDateMinimum() {
+      dateInput.min = getMoscowDate();
     }
 
-    // Отображение услуг и заполнение формы
+    function isWeekend(dateString) {
+      if (!dateString) return false;
+
+      const [year, month, day] =
+        dateString.split("-").map(Number);
+
+      const weekday = new Date(
+        Date.UTC(year, month - 1, day)
+      ).getUTCDay();
+
+      return weekday === 0 || weekday === 6;
+    }
+
+
+    // ------------------------------
+    // Состояние доступности
+    // ------------------------------
+
+    function setAvailabilityMessage(text, type = "") {
+      availabilityMessage.textContent = text;
+      availabilityMessage.className =
+        "availability-message" + (type ? " " + type : "");
+    }
+
+    function resetTimeSelect(text = "Выберите дату и специалиста") {
+      timeSelect.innerHTML = "";
+
+      const option = document.createElement("option");
+      option.value = "";
+      option.textContent = text;
+
+      timeSelect.appendChild(option);
+      timeSelect.disabled = true;
+    }
+
+
+    // ------------------------------
+    // Загрузка услуг и врачей
+    // ------------------------------
+
     function renderServices(services) {
-      const grid = document.getElementById('serviceGrid');
-      const select = document.getElementById('service');
+      servicesData = Array.isArray(services) ? services : [];
 
-      if (!grid || !select) return;
+      serviceSelect.innerHTML =
+        '<option value="">Выберите услугу</option>';
 
-      const activeServices = services
-        .filter(service => service && service.title)
-        .sort((a, b) =>
-          Number(a.sort_order || 0) - Number(b.sort_order || 0)
-        );
+      servicesData.forEach(service => {
+        const option = document.createElement("option");
 
-      const labels = [
-        'CARE',
-        'AESTHETICS',
-        'ALIGNMENT',
-        'RESTORE'
-      ];
+        option.value = String(service.id);
+        option.textContent =
+          service.title +
+          (service.price ? " — " + service.price : "");
 
-      const fragment = document.createDocumentFragment();
-
-      activeServices.forEach((service, index) => {
-        const card = document.createElement('article');
-        card.className = 'service-card reveal visible';
-
-        const top = document.createElement('div');
-        top.className = 'service-top';
-
-        const number = document.createElement('span');
-        number.textContent =
-          String(index + 1).padStart(2, '0') +
-          ' / ' + (labels[index] || 'CARE');
-
-        const arrow = document.createElement('span');
-        arrow.className = 'service-arrow';
-        arrow.textContent = '↗';
-
-        top.append(number, arrow);
-
-        const content = document.createElement('div');
-
-        const heading = document.createElement('h3');
-        heading.textContent = service.title;
-
-        const description = document.createElement('p');
-        description.textContent = service.description || '';
-
-        content.append(heading, description);
-
-        if (service.price) {
-          const price = document.createElement('p');
-          price.textContent = 'Стоимость: ' + service.price;
-          content.appendChild(price);
-        }
-
-        card.append(top, content);
-        fragment.appendChild(card);
+        serviceSelect.appendChild(option);
       });
 
-      if (activeServices.length) {
-        grid.replaceChildren(fragment);
-      } else {
-        grid.textContent = 'Услуги скоро появятся.';
+      const servicesGrid = document.getElementById("servicesGrid");
+
+      if (!servicesData.length) {
+        servicesGrid.innerHTML =
+          '<div class="empty-data">Услуги пока не добавлены.</div>';
+        return;
       }
 
-      const previousValue = select.value;
-      select.replaceChildren();
+      servicesGrid.innerHTML = servicesData.map((service, index) => `
+        <article class="service-card">
+          <div>
+            <div class="service-number">
+              ${String(index + 1).padStart(2, "0")} / FINESSSIM
+            </div>
 
-      const placeholder = document.createElement('option');
-      placeholder.value = '';
-      placeholder.textContent = 'Выберите направление';
-      select.appendChild(placeholder);
+            <h3>${escapeHTML(service.title)}</h3>
 
-      activeServices.forEach(service => {
-        const option = document.createElement('option');
-        option.value = service.title;
-        option.textContent = service.title;
-        select.appendChild(option);
-      });
+            <p>${escapeHTML(service.description || "")}</p>
+          </div>
 
-      if (
-        [...select.options].some(option => option.value === previousValue)
-      ) {
-        select.value = previousValue;
-      }
+          <div class="service-meta">
+            ${service.price ? escapeHTML(service.price) + " · " : ""}
+            ${Number(service.duration_minutes) || 60} минут
+          </div>
+        </article>
+      `).join("");
     }
 
-    // Отображение специалистов
+
     function renderStaff(staff) {
-      const grid = document.getElementById('doctorGrid');
+      staffData = Array.isArray(staff) ? staff : [];
 
-      if (!grid) return;
+      staffSelect.innerHTML =
+        '<option value="">Выберите специалиста</option>';
 
-      const activeStaff = staff
-        .filter(person => person && person.name)
-        .sort((a, b) =>
-          Number(a.sort_order || 0) - Number(b.sort_order || 0)
-        );
+      staffData.forEach(person => {
+        const option = document.createElement("option");
 
-      const fragment = document.createDocumentFragment();
+        option.value = String(person.id);
+        option.textContent = person.name;
 
-      activeStaff.forEach((person, index) => {
-        const card = document.createElement('article');
-        card.className = 'doctor-card reveal visible';
-
-        const photo = document.createElement('div');
-        photo.className = 'doctor-photo';
-
-        const img = document.createElement('img');
-
-        img.src = safeImageUrl(
-          person.photo_url,
-          fallbackDoctorImages[index % fallbackDoctorImages.length]
-        );
-
-        img.alt = person.name;
-        img.loading = 'lazy';
-
-        photo.appendChild(img);
-
-        const info = document.createElement('div');
-        info.className = 'doctor-info';
-
-        const details = document.createElement('div');
-
-        const name = document.createElement('h3');
-        name.textContent = person.name;
-
-        const position = document.createElement('p');
-        position.textContent = person.position || '';
-
-        details.append(name, position);
-
-        if (person.description) {
-          const description = document.createElement('p');
-          description.textContent = person.description;
-          details.appendChild(description);
-        }
-
-        const number = document.createElement('span');
-        number.className = 'doctor-number';
-        number.textContent = String(index + 1).padStart(2, '0');
-
-        info.append(details, number);
-        card.append(photo, info);
-
-        fragment.appendChild(card);
+        staffSelect.appendChild(option);
       });
 
-      if (activeStaff.length) {
-        grid.replaceChildren(fragment);
-      } else {
-        grid.textContent =
-          'Информация о специалистах скоро появится.';
+      staffSelect.disabled = staffData.length === 0;
+
+      const staffGrid = document.getElementById("staffGrid");
+
+      if (!staffData.length) {
+        staffGrid.innerHTML =
+          '<div class="empty-data">Специалисты пока не добавлены.</div>';
+        return;
+      }
+
+      staffGrid.innerHTML = staffData.map(person => {
+        const photo = person.photo_url
+          ? `
+            <img
+              src="${escapeHTML(person.photo_url)}"
+              alt="${escapeHTML(person.name)}"
+              loading="lazy"
+            >
+          `
+          : `
+            <div class="staff-placeholder">
+              ${escapeHTML(
+                (person.name || "F")
+                  .split(" ")
+                  .map(part => part[0] || "")
+                  .join("")
+                  .slice(0, 2)
+              )}
+            </div>
+          `;
+
+        return `
+          <article class="staff-card">
+            <div class="staff-photo">
+              ${photo}
+            </div>
+
+            <div class="staff-info">
+              <h3>${escapeHTML(person.name)}</h3>
+
+              <p>${escapeHTML(person.position || "Специалист")}</p>
+
+              ${
+                person.description
+                  ? `<p class="staff-description">${escapeHTML(person.description)}</p>`
+                  : ""
+              }
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+
+    // ------------------------------
+    // Настройки сайта
+    // ------------------------------
+
+    function renderSettings(settings) {
+      if (!settings) return;
+
+      const phone = settings.phone || "";
+      const address = settings.address || "";
+
+      const footerPhone =
+        document.getElementById("footerPhone");
+
+      const footerAddress =
+        document.getElementById("footerAddress");
+
+      footerPhone.textContent = phone || "Свяжитесь с нами";
+      footerAddress.textContent = address || "Адрес уточняется";
+
+      if (phone) {
+        const headerContact = document.querySelector(".header-contact");
+
+        if (headerContact) {
+          const link = document.createElement("a");
+
+          link.className = "header-phone";
+          link.href = "tel:" + phone.replace(/[^\d+]/g, "");
+          link.textContent = phone;
+
+          headerContact.prepend(link);
+        }
       }
     }
 
-    // Получение публичных данных из API
-    async function loadSiteData() {
-      const select = document.getElementById('service');
 
+    // ------------------------------
+    // Загрузка публичных данных
+    // ------------------------------
+
+    async function loadSiteData() {
       try {
-        const response = await fetch('/api/site', {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json'
-          },
-          credentials: 'same-origin'
+        const response = await fetch("/api/site", {
+          cache: "no-store"
         });
 
         if (!response.ok) {
-          throw new Error('Ошибка загрузки: ' + response.status);
+          throw new Error("Не удалось загрузить данные сайта");
         }
 
         const data = await response.json();
-
-        if (
-          !data ||
-          !data.settings ||
-          !Array.isArray(data.services) ||
-          !Array.isArray(data.staff)
-        ) {
-          throw new Error('Некорректный формат данных API');
-        }
 
         renderSettings(data.settings);
         renderServices(data.services);
         renderStaff(data.staff);
 
-        console.log('FINESSSIM: данные успешно загружены из D1');
-
       } catch (error) {
-        console.error('Ошибка загрузки данных FINESSSIM:', error);
+        console.error(error);
 
-        if (select) {
-          select.innerHTML =
-            '<option value="">Не удалось загрузить услуги</option>';
-        }
+        document.getElementById("servicesGrid").innerHTML =
+          '<div class="empty-data">Не удалось загрузить услуги. Попробуйте обновить страницу.</div>';
+
+        document.getElementById("staffGrid").innerHTML =
+          '<div class="empty-data">Не удалось загрузить специалистов.</div>';
+
+        setAvailabilityMessage(
+          "Не удалось загрузить данные. Обновите страницу.",
+          "error"
+        );
       }
     }
 
-    // Отправка заявки в API
-    const bookingForm = document.getElementById('bookingForm');
-    const bookingStatus = document.getElementById('bookingStatus');
 
-    bookingForm.addEventListener('submit', async event => {
-      event.preventDefault();
+    // ------------------------------
+    // Получение свободного времени
+    // ------------------------------
 
-      if (!bookingForm.reportValidity()) return;
+    async function loadAvailableSlots() {
+      const requestNumber = ++availabilityRequestNumber;
 
-      const submitButton = bookingForm.querySelector('.submit');
-      const originalText = submitButton.textContent;
+      const serviceId = serviceSelect.value;
+      const staffId = staffSelect.value;
+      const date = dateInput.value;
 
-      const formData = new FormData(bookingForm);
+      resetTimeSelect("Загружаем время...");
 
-      const payload = {
-        client_name: String(formData.get('name') || '').trim(),
-        phone: String(formData.get('phone') || '').trim(),
-        service: String(formData.get('service') || '').trim(),
-        message: String(formData.get('message') || '').trim(),
-        website: String(formData.get('website') || '').trim()
-      };
-
-      if (
-        !payload.client_name ||
-        !payload.phone ||
-        !payload.service
-      ) {
-        bookingStatus.textContent =
-          'Заполните имя, телефон и выберите услугу.';
-        bookingStatus.style.color = '#c04435';
+      if (!serviceId || !staffId || !date) {
+        resetTimeSelect();
+        setAvailabilityMessage(
+          "Выберите услугу, специалиста и дату, чтобы увидеть свободное время."
+        );
         return;
       }
 
-      submitButton.disabled = true;
-      submitButton.textContent = 'ОТПРАВКА...';
+      if (isWeekend(date)) {
+        resetTimeSelect("Клиника не работает");
+        setAvailabilityMessage(
+          "Запись доступна только с понедельника по пятницу.",
+          "error"
+        );
+        return;
+      }
 
-      bookingStatus.textContent = '';
-      bookingStatus.style.color = '#183c32';
+      if (date < getMoscowDate()) {
+        resetTimeSelect("Выберите будущую дату");
+        setAvailabilityMessage(
+          "Нельзя записаться на прошедшую дату.",
+          "error"
+        );
+        return;
+      }
+
+      setAvailabilityMessage("Проверяем свободное время...");
+
+      const params = new URLSearchParams({
+        date,
+        staff_id: staffId,
+        service_id: serviceId
+      });
 
       try {
-        const response = await fetch('/api/bookings', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          credentials: 'same-origin',
-          body: JSON.stringify(payload)
-        });
+        const response = await fetch(
+          "/api/availability?" + params.toString(),
+          { cache: "no-store" }
+        );
 
-        let result;
+        const data = await response.json();
 
-        try {
-          result = await response.json();
-        } catch (_) {
-          throw new Error('Сервер вернул некорректный ответ.');
+        // Игнорируем старые ответы, если пользователь уже поменял выбор.
+        if (requestNumber !== availabilityRequestNumber) {
+          return;
         }
 
         if (!response.ok) {
           throw new Error(
-            result.error || 'Не удалось отправить заявку.'
+            data.error || "Не удалось получить расписание"
+          );
+        }
+
+        const slots = Array.isArray(data.slots)
+          ? data.slots
+          : [];
+
+        resetTimeSelect(
+          slots.length
+            ? "Выберите удобное время"
+            : "Свободного времени нет"
+        );
+
+        if (!slots.length) {
+          setAvailabilityMessage(
+            data.message || "На выбранную дату свободного времени нет. Попробуйте другую дату.",
+            "error"
+          );
+          return;
+        }
+
+        slots.forEach(time => {
+          const option = document.createElement("option");
+
+          option.value = time;
+          option.textContent = time;
+
+          timeSelect.appendChild(option);
+        });
+
+        timeSelect.disabled = false;
+
+        setAvailabilityMessage(
+          `Доступно свободных вариантов: ${slots.length}. Выберите удобное время.`,
+          "success"
+        );
+
+      } catch (error) {
+        if (requestNumber !== availabilityRequestNumber) {
+          return;
+        }
+
+        console.error(error);
+
+        resetTimeSelect("Не удалось загрузить время");
+
+        setAvailabilityMessage(
+          error.message || "Ошибка загрузки расписания.",
+          "error"
+        );
+      }
+    }
+
+
+    // ------------------------------
+    // Изменение выбора
+    // ------------------------------
+
+    serviceSelect.addEventListener(
+      "change",
+      loadAvailableSlots
+    );
+
+    staffSelect.addEventListener(
+      "change",
+      loadAvailableSlots
+    );
+
+    dateInput.addEventListener(
+      "change",
+      loadAvailableSlots
+    );
+
+
+    // ------------------------------
+    // Отправка записи
+    // ------------------------------
+
+    bookingForm.addEventListener("submit", async event => {
+      event.preventDefault();
+
+      bookingStatus.textContent = "";
+      bookingStatus.className = "availability-message";
+
+      const clientName = nameInput.value.trim();
+      const phone = phoneInput.value.trim();
+
+      const serviceId = serviceSelect.value;
+      const staffId = staffSelect.value;
+      const date = dateInput.value;
+      const time = timeSelect.value;
+
+      if (
+        !clientName ||
+        !phone ||
+        !serviceId ||
+        !staffId ||
+        !date ||
+        !time
+      ) {
+        bookingStatus.textContent =
+          "Заполните все обязательные поля и выберите свободное время.";
+
+        bookingStatus.classList.add("error");
+        return;
+      }
+
+      if (isWeekend(date)) {
+        bookingStatus.textContent =
+          "В выходные дни клиника не работает.";
+
+        bookingStatus.classList.add("error");
+        return;
+      }
+
+      const selectedService = servicesData.find(
+        service => String(service.id) === String(serviceId)
+      );
+
+      if (!selectedService) {
+        bookingStatus.textContent =
+          "Услуга больше недоступна. Обновите страницу.";
+
+        bookingStatus.classList.add("error");
+        return;
+      }
+
+      const selectedStaff = staffData.find(
+        person => String(person.id) === String(staffId)
+      );
+
+      if (!selectedStaff) {
+        bookingStatus.textContent =
+          "Специалист больше недоступен. Обновите страницу.";
+
+        bookingStatus.classList.add("error");
+        return;
+      }
+
+      const appointmentAt = `${date}T${time}`;
+
+      const payload = {
+        client_name: clientName,
+        phone,
+        service_id: Number(serviceId),
+        staff_id: Number(staffId),
+        appointment_at: appointmentAt,
+        message: messageInput.value.trim(),
+        website: websiteInput.value
+      };
+
+      bookingSubmit.disabled = true;
+      bookingSubmit.textContent = "Отправляем заявку...";
+
+      try {
+        const response = await fetch("/api/bookings", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (response.status === 409) {
+          bookingStatus.textContent =
+            data.error ||
+            "Это время уже занято. Выберите другой вариант.";
+
+          bookingStatus.classList.add("error");
+
+          await loadAvailableSlots();
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error(
+            data.error || "Не удалось отправить заявку"
           );
         }
 
         bookingStatus.textContent =
-          'Спасибо! Заявка отправлена. Мы свяжемся с вами для уточнения деталей.';
+          data.message ||
+          "Заявка успешно отправлена!";
 
-        bookingStatus.style.color = '#187548';
+        bookingStatus.classList.add("success");
 
         bookingForm.reset();
 
+        setDateMinimum();
+
+        resetTimeSelect();
+
+        setAvailabilityMessage(
+          "Выберите услугу, специалиста и дату, чтобы увидеть свободное время."
+        );
+
       } catch (error) {
-        console.error('Ошибка отправки заявки:', error);
+        console.error(error);
 
         bookingStatus.textContent =
-          error.message || 'Ошибка отправки. Попробуйте ещё раз.';
+          error.message ||
+          "Произошла ошибка. Попробуйте ещё раз.";
 
-        bookingStatus.style.color = '#c04435';
+        bookingStatus.classList.add("error");
 
       } finally {
-        submitButton.disabled = false;
-        submitButton.textContent = originalText;
+        bookingSubmit.disabled = false;
+        bookingSubmit.innerHTML =
+          'Отправить заявку <span>↗</span>';
       }
     });
 
-    // Запуск загрузки
+
+    // ------------------------------
+    // Мобильное меню
+    // ------------------------------
+
+    const menuToggle =
+      document.getElementById("menuToggle");
+
+    const navigation =
+      document.getElementById("navigation");
+
+    menuToggle.addEventListener("click", () => {
+      navigation.classList.toggle("open");
+
+      menuToggle.textContent =
+        navigation.classList.contains("open") ? "×" : "☰";
+    });
+
+    navigation.querySelectorAll("a").forEach(link => {
+      link.addEventListener("click", () => {
+        navigation.classList.remove("open");
+        menuToggle.textContent = "☰";
+      });
+    });
+
+
+    // ------------------------------
+    // Анимация появления блоков
+    // ------------------------------
+
+    const observer = new IntersectionObserver(
+      entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.12 }
+    );
+
+    document.querySelectorAll(".reveal").forEach(element => {
+      observer.observe(element);
+    });
+
+
+    // ------------------------------
+    // Инициализация
+    // ------------------------------
+
+    document.getElementById("currentYear").textContent =
+      new Date().getFullYear();
+
+    setDateMinimum();
+
+    dateInput.addEventListener("click", () => {
+      if (dateInput.showPicker) {
+        dateInput.showPicker();
+      }
+    });
+
     loadSiteData();
   </script>
+
 </body>
 </html>
-
