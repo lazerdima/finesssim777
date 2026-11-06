@@ -1,3 +1,4 @@
+
 const json = (data, status = 200, extraHeaders = {}) =>
   new Response(JSON.stringify(data), {
     status,
@@ -46,7 +47,10 @@ function decodeBase64url(value) {
     normalized + "=".repeat((4 - normalized.length % 4) % 4)
   );
 
-  return Uint8Array.from(binary, char => char.charCodeAt(0));
+  return Uint8Array.from(
+    binary,
+    char => char.charCodeAt(0)
+  );
 }
 
 async function signingKey(secret) {
@@ -71,7 +75,8 @@ async function createSession(secret) {
     encoder.encode(
       JSON.stringify({
         role: "owner",
-        expires: Math.floor(Date.now() / 1000) + SESSION_SECONDS
+        expires:
+          Math.floor(Date.now() / 1000) + SESSION_SECONDS
       })
     )
   );
@@ -84,7 +89,11 @@ async function createSession(secret) {
     encoder.encode(payload)
   );
 
-  return payload + "." + base64url(new Uint8Array(signature));
+  return (
+    payload +
+    "." +
+    base64url(new Uint8Array(signature))
+  );
 }
 
 async function verifySession(request, secret) {
@@ -115,7 +124,9 @@ async function verifySession(request, secret) {
     if (!valid) return false;
 
     const payload = JSON.parse(
-      new TextDecoder().decode(decodeBase64url(parts[0]))
+      new TextDecoder().decode(
+        decodeBase64url(parts[0])
+      )
     );
 
     return (
@@ -150,7 +161,10 @@ async function requireOwner(request, env) {
     throw new Error("Не настроен SESSION_SECRET");
   }
 
-  return verifySession(request, env.SESSION_SECRET);
+  return verifySession(
+    request,
+    env.SESSION_SECRET
+  );
 }
 
 // ------------------------------
@@ -170,19 +184,37 @@ function safeText(value, maxLength = 500) {
 function validOrigin(request) {
   const origin = request.headers.get("Origin");
 
-  return !origin || origin === new URL(request.url).origin;
+  return (
+    !origin ||
+    origin === new URL(request.url).origin
+  );
 }
 
 async function readBody(request) {
-  const length = Number(
+  const contentLength = Number(
     request.headers.get("Content-Length") || 0
   );
 
-  if (length > 20000) {
+  if (
+    Number.isFinite(contentLength) &&
+    contentLength > 20000
+  ) {
     throw new Error("Слишком большой запрос");
   }
 
-  const body = await request.json();
+  const text = await request.text();
+
+  if (text.length > 20000) {
+    throw new Error("Слишком большой запрос");
+  }
+
+  let body;
+
+  try {
+    body = JSON.parse(text);
+  } catch {
+    throw new Error("Некорректный JSON");
+  }
 
   if (
     !body ||
@@ -205,8 +237,11 @@ function validAppointment(value) {
 
   const [datePart, timePart] = value.split("T");
 
-  const [year, month, day] = datePart.split("-").map(Number);
-  const [hour, minute] = timePart.split(":").map(Number);
+  const [year, month, day] =
+    datePart.split("-").map(Number);
+
+  const [hour, minute] =
+    timePart.split(":").map(Number);
 
   const date = new Date(
     year,
@@ -275,35 +310,36 @@ async function findActiveStaff(db, id) {
 // ------------------------------
 
 async function getPublicData(db) {
-  const [settings, services, staff] = await Promise.all([
-    getSettings(db),
+  const [settings, services, staff] =
+    await Promise.all([
+      getSettings(db),
 
-    db.prepare(
-      `SELECT
-        id,
-        title,
-        description,
-        price,
-        image_url,
-        sort_order
-       FROM services
-       WHERE active = 1
-       ORDER BY sort_order, id`
-    ).all(),
+      db.prepare(
+        `SELECT
+          id,
+          title,
+          description,
+          price,
+          image_url,
+          sort_order
+         FROM services
+         WHERE active = 1
+         ORDER BY sort_order, id`
+      ).all(),
 
-    db.prepare(
-      `SELECT
-        id,
-        name,
-        position,
-        description,
-        photo_url,
-        sort_order
-       FROM staff
-       WHERE active = 1
-       ORDER BY sort_order, id`
-    ).all()
-  ]);
+      db.prepare(
+        `SELECT
+          id,
+          name,
+          position,
+          description,
+          photo_url,
+          sort_order
+         FROM staff
+         WHERE active = 1
+         ORDER BY sort_order, id`
+      ).all()
+    ]);
 
   return {
     settings,
@@ -335,13 +371,37 @@ async function createPublicBooking(request, db) {
     );
   }
 
-  // Форма сайта передаёт name, phone, service, message.
+  // Защита от простых ботов.
+  // Скрытое поле website должно оставаться пустым.
+  const website = safeText(
+    body.website ?? "",
+    200
+  );
+
+  if (website === null) {
+    return json(
+      { error: "Некорректные данные" },
+      400
+    );
+  }
+
+  if (website !== "") {
+    // Не раскрываем боту факт срабатывания защиты.
+    return json({
+      success: true,
+      message: "Заявка успешно отправлена"
+    });
+  }
+
   const clientName = safeText(
-    body.name ?? body.client_name,
+    body.client_name ?? body.name ?? "",
     120
   );
 
-  const phone = safeText(body.phone, 40);
+  const phone = safeText(
+    body.phone ?? "",
+    40
+  );
 
   const serviceNameInput = safeText(
     body.service ?? "",
@@ -355,6 +415,7 @@ async function createPublicBooking(request, db) {
 
   if (
     !clientName ||
+    clientName.length < 2 ||
     !phone ||
     !validPhone(phone) ||
     !serviceNameInput ||
@@ -368,10 +429,7 @@ async function createPublicBooking(request, db) {
     );
   }
 
-  let serviceId = null;
-  let serviceName = serviceNameInput;
-
-  // Находим услугу по названию.
+  // Проверяем, что услуга существует и активна.
   const service = await db.prepare(
     `SELECT id, title
      FROM services
@@ -380,22 +438,17 @@ async function createPublicBooking(request, db) {
      LIMIT 1`
   ).bind(serviceNameInput).first();
 
-  if (service) {
-    serviceId = service.id;
-    serviceName = service.title;
-  }
-
-  // Если выбрана консультация, которой нет в списке услуг,
-  // сохраняем её как отдельное название без service_id.
-  if (!serviceName) {
+  if (!service) {
     return json(
-      { error: "Выберите услугу" },
+      {
+        error: "Выбранная услуга недоступна. Обновите страницу."
+      },
       400
     );
   }
 
-  // Публичная форма создаёт заявку, а не подтверждённую запись.
-  // Дату и врача владелец сможет указать позже в панели.
+  // Создаём заявку без назначенной даты и врача.
+  // Владелец сможет обработать её в панели управления.
   const result = await db.prepare(
     `INSERT INTO bookings (
       client_name,
@@ -413,9 +466,9 @@ async function createPublicBooking(request, db) {
   ).bind(
     clientName,
     phone,
-    serviceName,
+    service.title,
     message,
-    serviceId,
+    service.id,
     message
   ).run();
 
@@ -503,7 +556,6 @@ async function handleSettings(request, db, method) {
 
 async function handleServices(request, db, route, method) {
   if (route === "/api/admin/services") {
-
     if (method === "GET") {
       const result = await db.prepare(
         `SELECT *
@@ -531,8 +583,14 @@ async function handleServices(request, db, route, method) {
         body.description ?? "",
         1000
       );
-      const price = safeText(body.price ?? "", 80);
-      const image = safeText(body.image_url ?? "", 1000);
+      const price = safeText(
+        body.price ?? "",
+        80
+      );
+      const image = safeText(
+        body.image_url ?? "",
+        1000
+      );
       const order = Number(body.sort_order ?? 0);
 
       if (
@@ -723,7 +781,6 @@ async function handleServices(request, db, route, method) {
 
 async function handleStaff(request, db, route, method) {
   if (route === "/api/admin/staff") {
-
     if (method === "GET") {
       const result = await db.prepare(
         `SELECT *
@@ -964,15 +1021,11 @@ async function getBookings(db) {
       b.updated_at,
       s.title AS service_title,
       st.name AS staff_name
-
     FROM bookings b
-
     LEFT JOIN services s
       ON s.id = b.service_id
-
     LEFT JOIN staff st
       ON st.id = b.staff_id
-
     ORDER BY
       CASE
         WHEN b.appointment_at IS NULL
@@ -1004,12 +1057,21 @@ async function createAdminBooking(request, db) {
     );
   }
 
-  const clientName = safeText(body.client_name, 120);
-  const phone = safeText(body.phone, 40);
+  const clientName = safeText(
+    body.client_name,
+    120
+  );
+
+  const phone = safeText(
+    body.phone,
+    40
+  );
+
   const serviceNameInput = safeText(
     body.service ?? "",
     120
   );
+
   const notes = safeText(
     body.notes ?? body.message ?? "",
     2000
@@ -1052,7 +1114,10 @@ async function createAdminBooking(request, db) {
 
     serviceId = Number(body.service_id);
 
-    const service = await findActiveService(db, serviceId);
+    const service = await findActiveService(
+      db,
+      serviceId
+    );
 
     if (!service) {
       return json(
@@ -1101,7 +1166,10 @@ async function createAdminBooking(request, db) {
 
     staffId = Number(body.staff_id);
 
-    const staff = await findActiveStaff(db, staffId);
+    const staff = await findActiveStaff(
+      db,
+      staffId
+    );
 
     if (!staff) {
       return json(
@@ -1170,7 +1238,7 @@ async function createAdminBooking(request, db) {
 }
 
 // ------------------------------
-// Обновление или отмена записи
+// Обновление записи
 // ------------------------------
 
 async function updateBooking(request, db, id) {
@@ -1229,7 +1297,10 @@ async function updateBooking(request, db, id) {
   }
 
   if (body.client_name !== undefined) {
-    const value = safeText(body.client_name, 120);
+    const value = safeText(
+      body.client_name,
+      120
+    );
 
     if (!value) {
       return json(
@@ -1242,7 +1313,10 @@ async function updateBooking(request, db, id) {
   }
 
   if (body.phone !== undefined) {
-    const value = safeText(body.phone, 40);
+    const value = safeText(
+      body.phone,
+      40
+    );
 
     if (!value || !validPhone(value)) {
       return json(
@@ -1317,7 +1391,10 @@ async function updateBooking(request, db, id) {
     addUpdate("service", nextServiceName);
 
   } else if (body.service !== undefined) {
-    const value = safeText(body.service, 120);
+    const value = safeText(
+      body.service,
+      120
+    );
 
     if (!value) {
       return json(
@@ -1386,9 +1463,7 @@ async function updateBooking(request, db, id) {
   if (body.appointment_at !== undefined) {
     if (!validAppointment(body.appointment_at)) {
       return json(
-        {
-          error: "Укажите корректную дату и время"
-        },
+        { error: "Укажите корректную дату и время" },
         400
       );
     }
@@ -1408,7 +1483,7 @@ async function updateBooking(request, db, id) {
     );
   }
 
-  // Проверка конфликта времени у одного врача.
+  // Проверка конфликтов времени у одного врача.
   if (
     nextStaffId !== null &&
     nextAppointmentAt &&
@@ -1447,7 +1522,9 @@ async function updateBooking(request, db, id) {
     .map(item => `${item.column} = ?`)
     .join(", ");
 
-  const values = updates.map(item => item.value);
+  const values = updates.map(
+    item => item.value
+  );
 
   const result = await db.prepare(
     `UPDATE bookings
@@ -1487,9 +1564,10 @@ async function handleRequest(request, env) {
 
   const url = new URL(request.url);
 
-  const route = url.pathname.replace(/\/+$/, "") || "/";
-  const method = request.method;
+  const route =
+    url.pathname.replace(/\/+$/, "") || "/";
 
+  const method = request.method;
   const db = env.DB;
 
   // --------------------------
@@ -1507,7 +1585,10 @@ async function handleRequest(request, env) {
       );
     }
 
-    if (!env.ADMIN_PASSWORD || !env.SESSION_SECRET) {
+    if (
+      !env.ADMIN_PASSWORD ||
+      !env.SESSION_SECRET
+    ) {
       return json(
         { error: "Не настроены секреты администратора" },
         500
@@ -1801,3 +1882,4 @@ export async function onRequest(context) {
     );
   }
 }
+
