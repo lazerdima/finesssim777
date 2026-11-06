@@ -291,7 +291,7 @@ async function getSettings(db) {
 
 async function findActiveService(db, id) {
   return db.prepare(
-    `SELECT id, title
+    `SELECT id, title, duration_minutes
      FROM services
      WHERE id = ? AND active = 1`
   ).bind(id).first();
@@ -303,6 +303,93 @@ async function findActiveStaff(db, id) {
      FROM staff
      WHERE id = ? AND active = 1`
   ).bind(id).first();
+}
+
+// ------------------------------
+// Длительность услуг и расписание
+// ------------------------------
+
+async function getServiceDuration(db, serviceId, serviceName) {
+  let service = null;
+
+  if (serviceId !== null && serviceId !== undefined) {
+    service = await db.prepare(
+      `SELECT duration_minutes
+       FROM services
+       WHERE id = ?`
+    ).bind(serviceId).first();
+  }
+
+  if (!service && serviceName) {
+    service = await db.prepare(
+      `SELECT duration_minutes
+       FROM services
+       WHERE LOWER(TRIM(title)) = LOWER(TRIM(?))
+       LIMIT 1`
+    ).bind(serviceName).first();
+  }
+
+  const duration = Number(
+    service?.duration_minutes ?? 60
+  );
+
+  return (
+    Number.isInteger(duration) && duration > 0
+      ? duration
+      : 60
+  );
+}
+
+async function hasStaffConflict(
+  db,
+  staffId,
+  appointmentAt,
+  durationMinutes,
+  excludeId = null
+) {
+  const conflict = await db.prepare(
+    `SELECT b.id
+     FROM bookings b
+
+     LEFT JOIN services s
+       ON s.id = b.service_id
+
+     WHERE b.staff_id = ?
+       AND b.status != 'cancelled'
+       AND b.appointment_at IS NOT NULL
+       AND b.appointment_at != ''
+
+       AND datetime(b.appointment_at) <
+           datetime(?, '+' || ? || ' minutes')
+
+       AND datetime(
+         b.appointment_at,
+         '+' || COALESCE(
+           s.duration_minutes,
+           (
+             SELECT legacy_service.duration_minutes
+             FROM services legacy_service
+             WHERE LOWER(TRIM(legacy_service.title)) =
+                   LOWER(TRIM(b.service))
+             LIMIT 1
+           ),
+           60
+         ) || ' minutes'
+       ) > datetime(?)
+
+       AND (? IS NULL OR b.id != ?)
+
+     LIMIT 1`
+  ).bind(
+    staffId,
+    appointmentAt,
+    durationMinutes,
+    appointmentAt,
+    excludeId,
+    excludeId
+  ).first();
+
+  return Boolean(conflict);
 }
 
 // ------------------------------
@@ -321,6 +408,7 @@ async function getPublicData(db) {
           description,
           price,
           image_url,
+          duration_minutes,
           sort_order
          FROM services
          WHERE active = 1
@@ -371,8 +459,6 @@ async function createPublicBooking(request, db) {
     );
   }
 
-  // Защита от простых ботов.
-  // Скрытое поле website должно оставаться пустым.
   const website = safeText(
     body.website ?? "",
     200
@@ -386,7 +472,6 @@ async function createPublicBooking(request, db) {
   }
 
   if (website !== "") {
-    // Не раскрываем боту факт срабатывания защиты.
     return json({
       success: true,
       message: "Заявка успешно отправлена"
@@ -429,7 +514,6 @@ async function createPublicBooking(request, db) {
     );
   }
 
-  // Проверяем, что услуга существует и активна.
   const service = await db.prepare(
     `SELECT id, title
      FROM services
@@ -447,8 +531,6 @@ async function createPublicBooking(request, db) {
     );
   }
 
-  // Создаём заявку без назначенной даты и врача.
-  // Владелец сможет обработать её в панели управления.
   const result = await db.prepare(
     `INSERT INTO bookings (
       client_name,
@@ -592,6 +674,7 @@ async function handleServices(request, db, route, method) {
         1000
       );
       const order = Number(body.sort_order ?? 0);
+      const duration = Number(body.duration_minutes ?? 60);
 
       if (
         !title ||
@@ -599,7 +682,10 @@ async function handleServices(request, db, route, method) {
         price === null ||
         image === null ||
         !Number.isInteger(order) ||
-        Math.abs(order) > 10000
+        Math.abs(order) > 10000 ||
+        !Number.isInteger(duration) ||
+        duration < 5 ||
+        duration > 600
       ) {
         return json(
           { error: "Проверьте поля услуги" },
@@ -613,14 +699,16 @@ async function handleServices(request, db, route, method) {
           description,
           price,
           image_url,
+          duration_minutes,
           sort_order
         )
-        VALUES (?, ?, ?, ?, ?)`
+        VALUES (?, ?, ?, ?, ?, ?)`
       ).bind(
         title,
         description,
         price,
         image,
+        duration,
         order
       ).run();
 
@@ -681,6 +769,26 @@ async function handleServices(request, db, route, method) {
       }
 
       updates.push({ column, value });
+    }
+
+    if (body.duration_minutes !== undefined) {
+      const duration = Number(body.duration_minutes);
+
+      if (
+        !Number.isInteger(duration) ||
+        duration < 5 ||
+        duration > 600
+      ) {
+        return json(
+          { error: "Некорректная продолжительность услуги" },
+          400
+        );
+      }
+
+      updates.push({
+        column: "duration_minutes",
+        value: duration
+      });
     }
 
     if (body.active !== undefined) {
@@ -1020,6 +1128,7 @@ async function getBookings(db) {
       b.notes,
       b.updated_at,
       s.title AS service_title,
+      s.duration_minutes AS duration_minutes,
       st.name AS staff_name
     FROM bookings b
     LEFT JOIN services s
@@ -1179,23 +1288,27 @@ async function createAdminBooking(request, db) {
     }
   }
 
-  if (staffId !== null) {
-    const conflict = await db.prepare(
-      `SELECT id
-       FROM bookings
-       WHERE staff_id = ?
-         AND appointment_at = ?
-         AND status != 'cancelled'
-       LIMIT 1`
-    ).bind(
+  if (
+    staffId !== null &&
+    status !== "cancelled"
+  ) {
+    const duration = await getServiceDuration(
+      db,
+      serviceId,
+      serviceName
+    );
+
+    const conflict = await hasStaffConflict(
+      db,
       staffId,
-      appointmentAt
-    ).first();
+      appointmentAt,
+      duration
+    );
 
     if (conflict) {
       return json(
         {
-          error: "У этого врача уже есть запись на выбранное время"
+          error: "В это время врач занят другой записью. Выберите другое время."
         },
         409
       );
@@ -1483,7 +1596,7 @@ async function updateBooking(request, db, id) {
     );
   }
 
-  // Проверка конфликтов времени у одного врача.
+  // Проверка пересечения приёмов у одного врача.
   if (
     nextStaffId !== null &&
     nextAppointmentAt &&
@@ -1491,27 +1604,29 @@ async function updateBooking(request, db, id) {
     (
       body.staff_id !== undefined ||
       body.appointment_at !== undefined ||
-      body.status !== undefined
+      body.status !== undefined ||
+      body.service_id !== undefined ||
+      body.service !== undefined
     )
   ) {
-    const conflict = await db.prepare(
-      `SELECT id
-       FROM bookings
-       WHERE staff_id = ?
-         AND appointment_at = ?
-         AND status != 'cancelled'
-         AND id != ?
-       LIMIT 1`
-    ).bind(
+    const duration = await getServiceDuration(
+      db,
+      nextServiceId,
+      nextServiceName
+    );
+
+    const conflict = await hasStaffConflict(
+      db,
       nextStaffId,
       nextAppointmentAt,
+      duration,
       id
-    ).first();
+    );
 
     if (conflict) {
       return json(
         {
-          error: "У этого врача уже есть запись на выбранное время"
+          error: "В это время врач занят другой записью. Выберите другое время."
         },
         409
       );
@@ -1882,4 +1997,5 @@ export async function onRequest(context) {
     );
   }
 }
+
 
