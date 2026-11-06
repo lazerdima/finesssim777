@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -84,6 +83,21 @@ input:focus,textarea:focus,select:focus{border-color:var(--green)}
 .field-hint{font-size:11px;color:var(--muted);line-height:1.5;margin-top:6px}
 .settings-group{margin-bottom:18px}
 .settings-group:last-child{margin-bottom:0}
+
+/* РУЧНОЕ СОЗДАНИЕ ЗАПИСЕЙ */
+.manual-booking-form{
+  margin-bottom:22px;
+  border:1px solid var(--line);
+  background:var(--paper);
+  padding:24px;
+}
+.manual-booking-form h3{
+  margin:0 0 8px;
+  font-size:20px;
+}
+.manual-booking-form .grid{
+  margin-top:12px;
+}
 
 /* ФИНАНСЫ */
 .finance-summary{
@@ -181,6 +195,8 @@ input:focus,textarea:focus,select:focus{border-color:var(--green)}
   .expense-form-grid{grid-template-columns:1fr}
   .expense-form-grid .full{grid-column:auto}
   .finance-transaction{grid-template-columns:1fr auto}
+  .manual-booking-form{padding:18px}
+  .manual-booking-form .actions .btn{width:100%}
 }
 </style>
 </head>
@@ -285,8 +301,90 @@ input:focus,textarea:focus,select:focus{border-color:var(--green)}
   <section id="bookings" class="section">
     <div class="section-head">
       <h2>Записи клиентов</h2>
-      <button class="btn btn-light" id="refreshBookingsButton" type="button">ОБНОВИТЬ ↻</button>
+      <div class="actions" style="margin-top:0">
+        <button class="btn" id="addBookingButton" type="button">
+          + СОЗДАТЬ ЗАПИСЬ
+        </button>
+        <button class="btn btn-light" id="refreshBookingsButton" type="button">
+          ОБНОВИТЬ ↻
+        </button>
+      </div>
     </div>
+
+    <form id="manualBookingForm" class="manual-booking-form hidden">
+      <h3>Новая запись</h3>
+      <p class="note">Создание записи вручную владельцем студии.</p>
+
+      <div class="grid">
+        <div>
+          <label for="manualClientName">Имя клиента</label>
+          <input
+            id="manualClientName"
+            name="client_name"
+            required
+            maxlength="120"
+            placeholder="Имя и фамилия"
+          >
+        </div>
+
+        <div>
+          <label for="manualPhone">Телефон</label>
+          <input
+            id="manualPhone"
+            name="phone"
+            type="tel"
+            required
+            maxlength="30"
+            placeholder="+7 900 000-00-00"
+          >
+        </div>
+
+        <div>
+          <label for="manualService">Услуга</label>
+          <select id="manualService" name="service_id" required>
+            <option value="">Загрузка услуг...</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="manualStaff">Врач</label>
+          <select id="manualStaff" name="staff_id">
+            <option value="">Не назначен</option>
+          </select>
+        </div>
+
+        <div class="full">
+          <label for="manualAppointment">Дата и время приёма</label>
+          <input
+            id="manualAppointment"
+            name="appointment_at"
+            type="datetime-local"
+            required
+          >
+        </div>
+
+        <div class="full">
+          <label for="manualNotes">Комментарий</label>
+          <textarea
+            id="manualNotes"
+            name="notes"
+            maxlength="2000"
+            placeholder="Дополнительная информация о записи..."
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="createBookingButton" type="submit">
+          СОЗДАТЬ ЗАПИСЬ
+        </button>
+        <button class="btn btn-light" id="cancelManualBooking" type="button">
+          ОТМЕНА
+        </button>
+      </div>
+
+      <div id="manualBookingMessage" class="message" role="status"></div>
+    </form>
 
     <div class="booking-filter">
       <label for="bookingFilter">Показывать:</label>
@@ -546,6 +644,7 @@ const SETTINGS_GROUPS = [
 
 let allBookings = [];
 let allStaff = [];
+let allServices = [];
 let financeTransactions = [];
 
 function escapeHTML(value) {
@@ -897,11 +996,17 @@ async function loadServices() {
   try {
     const items = await api("/admin/services");
 
-    $("#servicesList").innerHTML = items.length
-      ? items.map(serviceCard).join("")
+    allServices = Array.isArray(items) ? items : [];
+
+    $("#servicesList").innerHTML = allServices.length
+      ? allServices.map(serviceCard).join("")
       : '<div class="empty">Услуг пока нет.</div>';
+
+    renderManualBookingOptions();
   } catch (error) {
+    allServices = [];
     $("#servicesList").textContent = error.message;
+    renderManualBookingOptions();
   }
 }
 
@@ -1010,12 +1115,15 @@ async function loadStaff() {
 
     allStaff = Array.isArray(items) ? items : [];
 
+    renderManualBookingOptions();
+
     $("#staffList").innerHTML = allStaff.length
       ? allStaff.map(staffCard).join("")
       : '<div class="empty">Сотрудников пока нет.</div>';
   } catch (error) {
     $("#staffList").textContent = error.message;
     allStaff = [];
+    renderManualBookingOptions();
   }
 }
 
@@ -1112,6 +1220,152 @@ function staffOptions(selectedId) {
   return `<option value="">Не назначен</option>${options}`;
 }
 
+// --------------------------------
+// ВАРИАНТЫ ДЛЯ РУЧНОЙ ЗАПИСИ
+// --------------------------------
+
+function renderManualBookingOptions() {
+  const serviceSelect = $("#manualService");
+  const staffSelect = $("#manualStaff");
+
+  if (!serviceSelect || !staffSelect) return;
+
+  const activeServices = allServices.filter(item =>
+    Number(item.active) === 1 || item.active === true
+  );
+
+  serviceSelect.innerHTML = `
+    <option value="">Выберите услугу</option>
+    ${activeServices.map(item => `
+      <option value="${Number(item.id)}">
+        ${escapeHTML(item.title)}
+        ${Number(item.duration_minutes) > 0
+          ? " · " + Number(item.duration_minutes) + " мин."
+          : ""}
+      </option>
+    `).join("")}
+  `;
+
+  staffSelect.innerHTML = staffOptions("");
+}
+
+// --------------------------------
+// СОЗДАНИЕ ЗАПИСИ ВРУЧНУЮ
+// --------------------------------
+
+$("#addBookingButton").addEventListener("click", () => {
+  const form = $("#manualBookingForm");
+
+  form.classList.toggle("hidden");
+
+  if (!form.classList.contains("hidden")) {
+    renderManualBookingOptions();
+    $("#manualClientName").focus();
+  }
+});
+
+$("#cancelManualBooking").addEventListener("click", () => {
+  $("#manualBookingForm").reset();
+  $("#manualBookingForm").classList.add("hidden");
+  message($("#manualBookingMessage"), "");
+});
+
+$("#manualBookingForm").addEventListener("submit", async event => {
+  event.preventDefault();
+
+  const form = event.currentTarget;
+  const button = $("#createBookingButton");
+
+  const clientName = $("#manualClientName").value.trim();
+  const phone = $("#manualPhone").value.trim();
+  const serviceId = Number($("#manualService").value);
+  const appointmentAt = $("#manualAppointment").value;
+  const staffValue = $("#manualStaff").value;
+  const notes = $("#manualNotes").value.trim();
+
+  if (clientName.length < 2) {
+    message(
+      $("#manualBookingMessage"),
+      "Укажи имя клиента.",
+      "error"
+    );
+    return;
+  }
+
+  const phoneDigits = phone.replace(/\D/g, "");
+
+  if (phoneDigits.length < 7 || phoneDigits.length > 15) {
+    message(
+      $("#manualBookingMessage"),
+      "Проверь номер телефона.",
+      "error"
+    );
+    return;
+  }
+
+  if (!serviceId) {
+    message(
+      $("#manualBookingMessage"),
+      "Выбери услугу.",
+      "error"
+    );
+    return;
+  }
+
+  if (!appointmentAt) {
+    message(
+      $("#manualBookingMessage"),
+      "Укажи дату и время приёма.",
+      "error"
+    );
+    return;
+  }
+
+  const body = {
+    client_name: clientName,
+    phone,
+    service_id: serviceId,
+    appointment_at: appointmentAt,
+    staff_id: staffValue ? Number(staffValue) : null,
+    notes,
+    status: "new"
+  };
+
+  button.disabled = true;
+  message(
+    $("#manualBookingMessage"),
+    "Создаём запись..."
+  );
+
+  try {
+    await api("/admin/bookings", "POST", body);
+
+    form.reset();
+    form.classList.add("hidden");
+
+    message(
+      $("#bookingsMessage"),
+      "Новая запись успешно создана.",
+      "success"
+    );
+
+    await loadBookings();
+
+  } catch (error) {
+    message(
+      $("#manualBookingMessage"),
+      error.message,
+      "error"
+    );
+  } finally {
+    button.disabled = false;
+  }
+});
+
+// --------------------------------
+// КАРТОЧКИ ЗАПИСЕЙ
+// --------------------------------
+
 function bookingCard(item) {
   const id = Number(item.id);
   const status = STATUS_LABELS[item.status] ? item.status : "new";
@@ -1145,7 +1399,7 @@ function bookingCard(item) {
 
         <div>
           <strong>КОММЕНТАРИЙ</strong>
-          <span class="booking-message">${escapeHTML(item.message || "Нет комментария")}</span>
+          <span class="booking-message">${escapeHTML(item.message || item.notes || "Нет комментария")}</span>
         </div>
       </div>
 
