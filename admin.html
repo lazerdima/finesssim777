@@ -514,8 +514,17 @@ input:focus,textarea:focus,select:focus{border-color:var(--green)}
         <h3>Резервная копия базы</h3>
         <button class="btn btn-light btn-small" id="downloadBackupButton" type="button">СКАЧАТЬ BACKUP JSON</button>
       </div>
-      <p class="muted">Копия настроек, услуг, сотрудников, записей, финансов и журнала действий. Файл содержит персональные данные клиентов — храните его в безопасном месте.</p>
+      <p class="note">Копия настроек, услуг, сотрудников, записей, финансов и журнала действий. Файл содержит персональные данные клиентов — храните его в безопасном месте.</p>
       <div class="message" id="backupMessage" role="status"></div>
+      <div style="border-top:1px solid var(--line);margin-top:18px;padding-top:18px">
+        <h4>Восстановить из файла</h4>
+        <p class="note">Восстановление полностью заменит текущие данные содержимым выбранной копии. Перед началом обязательно скачайте свежий backup текущей базы.</p>
+        <label for="restoreBackupFile">Файл резервной копии JSON</label>
+        <input id="restoreBackupFile" type="file" accept=".json,application/json">
+        <p class="note" id="restoreBackupPreview">Файл не выбран.</p>
+        <button class="btn btn-danger btn-small" id="restoreBackupButton" type="button" disabled>ВОССТАНОВИТЬ БАЗУ ИЗ ФАЙЛА</button>
+        <div class="message" id="restoreBackupMessage" role="status"></div>
+      </div>
     </div>
 
     <div class="card">
@@ -2019,6 +2028,89 @@ $("#downloadBackupButton").addEventListener("click", async event => {
     message($("#backupMessage"), error.message || "Не удалось создать резервную копию.", "error");
   } finally {
     button.disabled = false;
+  }
+});
+
+let selectedRestoreBackup = null;
+
+$("#restoreBackupFile").addEventListener("change", async event => {
+  const file = event.target.files?.[0];
+  selectedRestoreBackup = null;
+  $("#restoreBackupButton").disabled = true;
+  $("#restoreBackupPreview").textContent = "Проверяем файл...";
+  message($("#restoreBackupMessage"), "");
+
+  if (!file) {
+    $("#restoreBackupPreview").textContent = "Файл не выбран.";
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    $("#restoreBackupPreview").textContent = "Файл слишком большой. Максимальный размер — 5 МБ.";
+    message($("#restoreBackupMessage"), "Выберите корректный JSON-файл размером до 5 МБ.", "error");
+    event.target.value = "";
+    return;
+  }
+
+  try {
+    const raw = await file.text();
+    const backup = JSON.parse(raw);
+    const expected = ["site_settings","services","staff","staff_schedules","bookings","finance_transactions","admin_audit_log"];
+    if (
+      !backup ||
+      backup.format !== "finesssim-d1-backup" ||
+      backup.version !== 1 ||
+      !backup.tables ||
+      expected.some(name => !Array.isArray(backup.tables[name]))
+    ) {
+      throw new Error("Формат файла не распознан как резервная копия FINESSSIM.");
+    }
+    const counts = expected.map(name => name + ": " + backup.tables[name].length).join(" · ");
+    selectedRestoreBackup = raw;
+    $("#restoreBackupPreview").textContent = "Копия от " + (backup.created_at || "неизвестной даты") + ". " + counts;
+    $("#restoreBackupButton").disabled = false;
+    message($("#restoreBackupMessage"), "Файл прошёл предварительную проверку. Перед восстановлением скачайте свежую копию текущей базы.", "success");
+  } catch (error) {
+    $("#restoreBackupPreview").textContent = "Файл не выбран или повреждён.";
+    message($("#restoreBackupMessage"), error.message || "Не удалось прочитать файл.", "error");
+    event.target.value = "";
+  }
+});
+
+$("#restoreBackupButton").addEventListener("click", async event => {
+  if (!selectedRestoreBackup) return;
+  if (!confirm("ВНИМАНИЕ! Все текущие настройки, услуги, сотрудники, записи, финансы и журнал действий будут заменены данными из выбранного файла. Вы уже скачали резервную копию текущей базы?")) return;
+  const confirmation = prompt('Для подтверждения полного восстановления введите ВОССТАНОВИТЬ:');
+  if (confirmation !== "ВОССТАНОВИТЬ") {
+    message($("#restoreBackupMessage"), "Восстановление отменено: подтверждение не совпало.", "error");
+    return;
+  }
+
+  const button = event.currentTarget;
+  button.disabled = true;
+  message($("#restoreBackupMessage"), "Восстанавливаем базу. Не закрывайте страницу...");
+  try {
+    const response = await fetch("/api/admin/backup/restore", {
+      method: "POST",
+      credentials: "same-origin",
+      cache: "no-store",
+      headers: { "Content-Type": "application/json" },
+      body: selectedRestoreBackup
+    });
+    const result = await response.json().catch(() => ({}));
+    if (response.status === 401) {
+      showLogin();
+      throw new Error("Сессия завершена. Войдите снова.");
+    }
+    if (!response.ok) throw new Error(result.error || "Не удалось восстановить базу.");
+    message($("#restoreBackupMessage"), "База восстановлена. Обновляем данные панели...", "success");
+    selectedRestoreBackup = null;
+    $("#restoreBackupFile").value = "";
+    $("#restoreBackupPreview").textContent = "Файл не выбран.";
+    await Promise.all([loadSettings(), loadServices(), loadStaff(), loadBookings(), loadFinance()]);
+  } catch (error) {
+    message($("#restoreBackupMessage"), error.message || "Ошибка восстановления базы.", "error");
+  } finally {
+    button.disabled = true;
   }
 });
 
