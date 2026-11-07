@@ -1195,6 +1195,7 @@ async function handleSettings(request, db, method) {
 
   if (statements.length) {
     await db.batch(statements);
+    await logAdminAction(db, "Изменил настройки сайта", "site_settings", null, body);
   }
 
   return json({
@@ -1574,7 +1575,7 @@ async function getBookings(db) {
 // СОЗДАНИЕ ЗАПИСИ ВЛАДЕЛЬЦЕМ
 // ================================================
 
-async function createAdminBooking(request, db) {
+async function createAdminBooking(request, db, env) {
   let body;
 
   try {
@@ -1675,25 +1676,19 @@ async function createAdminBooking(request, db) {
     }
   }
 
+  const duration = await getServiceDuration(db, serviceId, serviceName);
+  const settings = await getSettings(db);
+  const schedule = getWorkingSchedule(settings);
+
+  if (status !== "cancelled" && !isWorkingAppointment(appointmentAt, duration, schedule)) {
+    return json({ error: "Время записи находится вне рабочего графика клиники или уже прошло" }, 400);
+  }
+
   if (staffId !== null && status !== "cancelled") {
-    const duration = await getServiceDuration(
-      db,
-      serviceId,
-      serviceName
-    );
-
-    const conflict = await hasStaffConflict(
-      db,
-      staffId,
-      appointmentAt,
-      duration
-    );
-
+    const conflict = await hasStaffConflict(db, staffId, appointmentAt, duration);
     if (conflict) {
       return json(
-        {
-          error: "В это время специалист занят другой записью. Выберите другое время."
-        },
+        { error: "В это время специалист занят другой записью. Выберите другое время." },
         409
       );
     }
@@ -1759,6 +1754,21 @@ async function createAdminBooking(request, db) {
       eventKey
     ).run();
   }
+
+  let staffName = "Не назначен";
+  if (staffId !== null) {
+    const staff = await db.prepare("SELECT name FROM staff WHERE id = ?").bind(staffId).first();
+    if (staff?.name) staffName = staff.name;
+  }
+
+  await sendTelegramBookingNotification(env, {
+    id: bookingId, clientName, phone, service: serviceName,
+    staff: staffName, appointmentAt, message: notes
+  });
+  await logAdminAction(db, "Создал запись", "booking", bookingId, {
+    client_name: clientName, phone, service: serviceName,
+    appointment_at: appointmentAt, staff_id: staffId, status
+  });
 
   return json({ success: true, id: bookingId }, 201);
 }
@@ -1932,39 +1942,29 @@ async function updateBooking(request, db, id) {
     return json({ error: "Нет изменений" }, 400);
   }
 
-  if (
-    nextStaffId !== null &&
-    nextAppointmentAt &&
-    nextStatus !== "cancelled" &&
-    (
-      body.staff_id !== undefined ||
-      body.appointment_at !== undefined ||
-      body.status !== undefined ||
-      body.service_id !== undefined ||
-      body.service !== undefined
-    )
-  ) {
-    const duration = await getServiceDuration(
-      db,
-      nextServiceId,
-      nextServiceName
-    );
+  const appointmentChanged = (
+    body.staff_id !== undefined || body.appointment_at !== undefined ||
+    body.service_id !== undefined || body.service !== undefined ||
+    body.status !== undefined
+  );
 
-    const conflict = await hasStaffConflict(
-      db,
-      nextStaffId,
-      nextAppointmentAt,
-      duration,
-      id
-    );
+  if (appointmentChanged && nextAppointmentAt && nextStatus !== "cancelled") {
+    const duration = await getServiceDuration(db, nextServiceId, nextServiceName);
+    const settings = await getSettings(db);
+    const schedule = getWorkingSchedule(settings);
 
-    if (conflict) {
-      return json(
-        {
-          error: "В это время специалист занят другой записью. Выберите другое время."
-        },
-        409
-      );
+    if (!isWorkingAppointment(nextAppointmentAt, duration, schedule)) {
+      return json({ error: "Время записи находится вне рабочего графика клиники или уже прошло" }, 400);
+    }
+
+    if (nextStaffId !== null) {
+      const conflict = await hasStaffConflict(db, nextStaffId, nextAppointmentAt, duration, id);
+      if (conflict) {
+        return json(
+          { error: "В это время специалист занят другой записью. Выберите другое время." },
+          409
+        );
+      }
     }
   }
 
@@ -2035,11 +2035,11 @@ async function updateBooking(request, db, id) {
       return json({ error: "Не удалось обновить запись" }, 400);
     }
 
-    return json({
-      success: true,
-      id,
-      changes: result.meta.changes
+    await logAdminAction(db, "Изменил запись", "booking", id, {
+      before: { status: current.status, appointment_at: current.appointment_at, staff_id: current.staff_id, service: current.service },
+      after: { status: nextStatus, appointment_at: nextAppointmentAt, staff_id: nextStaffId, service: nextServiceName }
     });
+    return json({ success: true, id, changes: result.meta.changes });
   }
 
   const statements = [updateStatement];
@@ -2125,11 +2125,11 @@ async function updateBooking(request, db, id) {
     );
   }
 
-  return json({
-    success: true,
-    id,
-    changes: updateResult.meta.changes
+  await logAdminAction(db, nextStatus !== current.status ? "Изменил статус записи" : "Изменил запись", "booking", id, {
+    before: { status: current.status, appointment_at: current.appointment_at, staff_id: current.staff_id, service: current.service },
+    after: { status: nextStatus, appointment_at: nextAppointmentAt, staff_id: nextStaffId, service: nextServiceName }
   });
+  return json({ success: true, id, changes: updateResult.meta.changes });
 }
 
 // ================================================
@@ -2275,13 +2275,10 @@ async function createFinanceExpense(request, db) {
     eventKey
   ).run();
 
-  return json(
-    {
-      success: true,
-      id: result.meta.last_row_id
-    },
-    201
-  );
+  await logAdminAction(db, "Добавил расход", "finance_expense", result.meta.last_row_id, {
+    amount, category, description, transaction_date: date
+  });
+  return json({ success: true, id: result.meta.last_row_id }, 201);
 }
 
 
@@ -2336,7 +2333,9 @@ async function updateFinanceExpense(request, db, id) {
   if (!result.meta.changes) {
     return json({ error: "Не удалось обновить расход" }, 404);
   }
-
+  await logAdminAction(db, "Изменил расход", "finance_expense", id, {
+    amount, category, description, transaction_date: date
+  });
   return json({ success: true, id, changes: result.meta.changes });
 }
 
@@ -2354,22 +2353,42 @@ async function ensureAuditTable(db) {
       entity_type TEXT NOT NULL,
       entity_id INTEGER,
       details TEXT NOT NULL,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      restored_at TEXT,
+      restored_transaction_id INTEGER
     )`
+  ).run();
+
+  const info = await db.prepare("PRAGMA table_info(admin_audit_log)").all();
+  const columns = new Set((info.results || []).map(column => column.name));
+  if (!columns.has("restored_at")) {
+    await db.prepare("ALTER TABLE admin_audit_log ADD COLUMN restored_at TEXT").run();
+  }
+  if (!columns.has("restored_transaction_id")) {
+    await db.prepare("ALTER TABLE admin_audit_log ADD COLUMN restored_transaction_id INTEGER").run();
+  }
+}
+
+async function logAdminAction(db, action, entityType, entityId, details = {}) {
+  await ensureAuditTable(db);
+  await db.prepare(
+    `INSERT INTO admin_audit_log (actor, action, entity_type, entity_id, details)
+     VALUES ('owner', ?, ?, ?, ?)`
+  ).bind(
+    action,
+    entityType,
+    validId(entityId) ? Number(entityId) : null,
+    JSON.stringify(details ?? {})
   ).run();
 }
 
 async function deleteFinanceExpense(request, db, id) {
-  if (!validId(id)) {
-    return json({ error: "Некорректный номер расхода" }, 400);
-  }
-
+  if (!validId(id)) return json({ error: "Некорректный номер расхода" }, 400);
   await ensureAuditTable(db);
 
   const existing = await db.prepare(
     `SELECT id, type, amount, category, description, transaction_date
-     FROM finance_transactions
-     WHERE id = ?`
+     FROM finance_transactions WHERE id = ?`
   ).bind(id).first();
 
   if (!existing || existing.type !== "expense") {
@@ -2387,8 +2406,8 @@ async function deleteFinanceExpense(request, db, id) {
     db.prepare(
       `INSERT INTO admin_audit_log
        (actor, action, entity_type, entity_id, details)
-       VALUES (?, ?, ?, ?, ?)`
-    ).bind("owner", "Удалил расход", "finance_expense", id, details),
+       VALUES ('owner', 'Удалил расход', 'finance_expense', ?, ?)`
+    ).bind(id, details),
     db.prepare(
       "DELETE FROM finance_transactions WHERE id = ? AND type = 'expense'"
     ).bind(id)
@@ -2397,20 +2416,79 @@ async function deleteFinanceExpense(request, db, id) {
   if (!results?.[1]?.meta?.changes) {
     return json({ error: "Не удалось удалить расход" }, 409);
   }
-
   return json({ success: true, id });
+}
+
+async function restoreDeletedExpense(request, db, auditId) {
+  if (!validId(auditId)) return json({ error: "Некорректный номер действия" }, 400);
+  await ensureAuditTable(db);
+
+  const entry = await db.prepare(
+    `SELECT id, action, entity_type, details, restored_at
+     FROM admin_audit_log WHERE id = ?`
+  ).bind(auditId).first();
+
+  if (!entry || entry.action !== "Удалил расход" || entry.entity_type !== "finance_expense") {
+    return json({ error: "Удалённый расход не найден в журнале" }, 404);
+  }
+  if (entry.restored_at) return json({ error: "Этот расход уже восстановлен" }, 409);
+
+  let details;
+  try { details = JSON.parse(entry.details || "{}"); }
+  catch { return json({ error: "Данные удалённого расхода повреждены" }, 409); }
+
+  const amount = parseRubles(details.amount);
+  const category = safeText(details.category, 100);
+  const description = safeText(details.description ?? "", 1000);
+  const date = details.transaction_date;
+  if (!amount || !category || description === null || !validBookingDate(date)) {
+    return json({ error: "Невозможно восстановить расход: данные некорректны" }, 409);
+  }
+
+  const eventKey = `audit-restore:${auditId}`;
+  const restoreDetails = JSON.stringify({
+    restored_from_audit_id: Number(auditId), amount, category, transaction_date: date
+  });
+
+  const results = await db.batch([
+    db.prepare(
+      `INSERT INTO finance_transactions (
+        type, amount, category, description, transaction_date, event_key
+      )
+      SELECT 'expense', ?, ?, ?, ?, ?
+      WHERE EXISTS (
+        SELECT 1 FROM admin_audit_log
+        WHERE id = ? AND action = 'Удалил расход'
+          AND entity_type = 'finance_expense' AND restored_at IS NULL
+      )`
+    ).bind(amount, category, description, date, eventKey, auditId),
+    db.prepare(
+      `UPDATE admin_audit_log
+       SET restored_at = CURRENT_TIMESTAMP,
+           restored_transaction_id = (SELECT id FROM finance_transactions WHERE event_key = ?)
+       WHERE id = ? AND restored_at IS NULL`
+    ).bind(eventKey, auditId),
+    db.prepare(
+      `INSERT INTO admin_audit_log
+       (actor, action, entity_type, entity_id, details)
+       SELECT 'owner', 'Восстановил расход', 'finance_expense', restored_transaction_id, ?
+       FROM admin_audit_log WHERE id = ? AND restored_at IS NOT NULL`
+    ).bind(restoreDetails, auditId)
+  ]);
+
+  if (!results?.[0]?.meta?.changes || !results?.[1]?.meta?.changes) {
+    return json({ error: "Расход уже восстановлен или не удалось его восстановить" }, 409);
+  }
+  return json({ success: true, id: results[0].meta.last_row_id, audit_id: Number(auditId) });
 }
 
 async function getAdminAuditLog(db) {
   await ensureAuditTable(db);
-
   const result = await db.prepare(
-    `SELECT id, actor, action, entity_type, entity_id, details, created_at
-     FROM admin_audit_log
-     ORDER BY id DESC
-     LIMIT 100`
+    `SELECT id, actor, action, entity_type, entity_id, details,
+            created_at, restored_at, restored_transaction_id
+     FROM admin_audit_log ORDER BY id DESC LIMIT 200`
   ).all();
-
   return json({ entries: result.results || [] });
 }
 
@@ -2570,6 +2648,11 @@ async function handleRequest(request, env) {
     return getAdminAuditLog(db);
   }
 
+  const auditRestoreMatch = route.match(/^\/api\/admin\/audit\/(\d+)\/restore$/);
+  if (auditRestoreMatch && method === "POST") {
+    return restoreDeletedExpense(request, db, Number(auditRestoreMatch[1]));
+  }
+
   // Все записи
   if (route === "/api/admin/bookings") {
     if (method === "GET") {
@@ -2577,7 +2660,7 @@ async function handleRequest(request, env) {
     }
 
     if (method === "POST") {
-      return createAdminBooking(request, db);
+      return createAdminBooking(request, db, env);
     }
 
     return json({ error: "Метод не поддерживается" }, 405);
