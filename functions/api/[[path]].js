@@ -434,6 +434,34 @@ function getWorkingSchedule(settings = {}) {
   return { days, start, end, interval };
 }
 
+async function ensureStaffScheduleTable(db) {
+  await db.prepare(
+    `CREATE TABLE IF NOT EXISTS staff_schedules (
+      staff_id INTEGER PRIMARY KEY,
+      working_days TEXT NOT NULL,
+      working_start TEXT NOT NULL,
+      working_end TEXT NOT NULL,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`
+  ).run();
+}
+
+async function getStaffWorkingSchedule(db, staffId, clinicSettings = {}) {
+  const clinicSchedule = getWorkingSchedule(clinicSettings);
+  if (!validId(staffId)) return clinicSchedule;
+  await ensureStaffScheduleTable(db);
+  const personal = await db.prepare(
+    "SELECT working_days, working_start, working_end FROM staff_schedules WHERE staff_id = ?"
+  ).bind(Number(staffId)).first();
+  if (!personal) return clinicSchedule;
+  return getWorkingSchedule({
+    ...clinicSettings,
+    working_days: personal.working_days,
+    working_start: personal.working_start,
+    working_end: personal.working_end
+  });
+}
+
 function isWorkingDay(dateString, schedule) {
   if (!validBookingDate(dateString)) return false;
 
@@ -748,11 +776,8 @@ async function getAvailableSlots(
   serviceId,
   settings
 ) {
-  const schedule = getWorkingSchedule(settings);
-
   if (
     !validBookingDate(date) ||
-    !isWorkingDay(date, schedule) ||
     !validId(staffId) ||
     !validId(serviceId)
   ) {
@@ -761,8 +786,10 @@ async function getAvailableSlots(
 
   const service = await findActiveService(db, Number(serviceId));
   const staff = await findActiveStaff(db, Number(staffId));
-
   if (!service || !staff) return [];
+
+  const schedule = await getStaffWorkingSchedule(db, Number(staffId), settings);
+  if (!isWorkingDay(date, schedule)) return [];
 
   const duration = Number(service.duration_minutes) || 60;
 
@@ -821,12 +848,12 @@ async function getPublicAvailability(request, db) {
   }
 
   const settings = await getSettings(db);
-  const schedule = getWorkingSchedule(settings);
+  const schedule = await getStaffWorkingSchedule(db, Number(staffId), settings);
 
   if (!isWorkingDay(date, schedule)) {
     return json({
       slots: [],
-      message: "В этот день клиника не работает"
+      message: "В этот день специалист не работает"
     });
   }
 
@@ -958,7 +985,7 @@ async function createPublicBooking(request, db, env) {
 
   const duration = Number(service.duration_minutes) || 60;
   const settings = await getSettings(db);
-  const schedule = getWorkingSchedule(settings);
+  const schedule = await getStaffWorkingSchedule(db, staffId, settings);
 
   if (!isWorkingAppointment(appointmentAt, duration, schedule)) {
     return json(
@@ -1391,11 +1418,22 @@ async function handleServices(request, db, route, method) {
 async function handleStaff(request, db, route, method) {
   if (route === "/api/admin/staff") {
     if (method === "GET") {
-      const result = await db.prepare(
-        "SELECT * FROM staff ORDER BY sort_order, id"
-      ).all();
-
-      return json(result.results || []);
+      await ensureStaffScheduleTable(db);
+      const [result, settings, schedules] = await Promise.all([
+        db.prepare("SELECT * FROM staff ORDER BY sort_order, id").all(),
+        getSettings(db),
+        db.prepare("SELECT staff_id, working_days, working_start, working_end FROM staff_schedules").all()
+      ]);
+      const scheduleMap = new Map((schedules.results || []).map(item => [Number(item.staff_id), item]));
+      return json((result.results || []).map(person => {
+        const schedule = scheduleMap.get(Number(person.id));
+        return {
+          ...person,
+          working_days: schedule?.working_days ?? settings.working_days ?? DEFAULT_SCHEDULE.working_days,
+          working_start: schedule?.working_start ?? settings.working_start ?? DEFAULT_SCHEDULE.working_start,
+          working_end: schedule?.working_end ?? settings.working_end ?? DEFAULT_SCHEDULE.working_end
+        };
+      }));
     }
 
     if (method !== "POST") {
@@ -1514,27 +1552,60 @@ async function handleStaff(request, db, route, method) {
     updates.push({ column: "sort_order", value: order });
   }
 
-  if (!updates.length) {
+  const scheduleFields = ["working_days", "working_start", "working_end"];
+  const scheduleChanged = scheduleFields.some(key => body[key] !== undefined);
+  let scheduleValues = null;
+
+  if (scheduleChanged) {
+    await ensureStaffScheduleTable(db);
+    const [currentSettings, currentSchedule] = await Promise.all([
+      getSettings(db),
+      db.prepare(
+        "SELECT working_days, working_start, working_end FROM staff_schedules WHERE staff_id = ?"
+      ).bind(id).first()
+    ]);
+    scheduleValues = {
+      working_days: body.working_days ?? currentSchedule?.working_days ?? currentSettings.working_days ?? DEFAULT_SCHEDULE.working_days,
+      working_start: body.working_start ?? currentSchedule?.working_start ?? currentSettings.working_start ?? DEFAULT_SCHEDULE.working_start,
+      working_end: body.working_end ?? currentSchedule?.working_end ?? currentSettings.working_end ?? DEFAULT_SCHEDULE.working_end,
+      slot_interval: currentSettings.slot_interval ?? DEFAULT_SCHEDULE.slot_interval
+    };
+    const scheduleError = validateScheduleInput(scheduleValues, currentSettings);
+    if (scheduleError) return json({ error: scheduleError }, 400);
+  }
+
+  if (!updates.length && !scheduleChanged) {
     return json({ error: "Нет изменений" }, 400);
   }
 
-  const setClause = updates
-    .map(item => `${item.column} = ?`)
-    .join(", ");
+  let changes = 0;
+  if (updates.length) {
+    const setClause = updates.map(item => `${item.column} = ?`).join(", ");
+    const result = await db.prepare(
+      `UPDATE staff SET ${setClause} WHERE id = ?`
+    ).bind(...updates.map(item => item.value), id).run();
+    changes = result.meta.changes;
+  } else {
+    const exists = await db.prepare("SELECT id FROM staff WHERE id = ?").bind(id).first();
+    changes = exists ? 1 : 0;
+  }
 
-  const result = await db.prepare(
-    `UPDATE staff SET ${setClause} WHERE id = ?`
-  ).bind(
-    ...updates.map(item => item.value),
-    id
-  ).run();
+  if (!changes) return json({ error: "Сотрудник не найден" }, 404);
 
-  if (!result.meta.changes) {
-    return json({ error: "Сотрудник не найден" }, 404);
+  if (scheduleChanged) {
+    await db.prepare(
+      `INSERT INTO staff_schedules (staff_id, working_days, working_start, working_end, updated_at)
+       VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+       ON CONFLICT(staff_id) DO UPDATE SET
+         working_days = excluded.working_days,
+         working_start = excluded.working_start,
+         working_end = excluded.working_end,
+         updated_at = CURRENT_TIMESTAMP`
+    ).bind(id, scheduleValues.working_days, scheduleValues.working_start, scheduleValues.working_end).run();
   }
 
   await logAdminAction(db, "Изменил данные сотрудника", "staff", id, body);
-  return json({ success: true, changes: result.meta.changes });
+  return json({ success: true, changes });
 }
 
 // ================================================
@@ -1682,7 +1753,7 @@ async function createAdminBooking(request, db, env) {
 
   const duration = await getServiceDuration(db, serviceId, serviceName);
   const settings = await getSettings(db);
-  const schedule = getWorkingSchedule(settings);
+  const schedule = await getStaffWorkingSchedule(db, staffId, settings);
 
   if (status !== "cancelled" && status !== "completed" && !isWorkingAppointment(appointmentAt, duration, schedule)) {
     return json({ error: "Время записи находится вне рабочего графика клиники или уже прошло" }, 400);
@@ -1955,7 +2026,7 @@ async function updateBooking(request, db, id) {
   if (appointmentChanged && nextAppointmentAt && nextStatus !== "cancelled") {
     const duration = await getServiceDuration(db, nextServiceId, nextServiceName);
     const settings = await getSettings(db);
-    const schedule = getWorkingSchedule(settings);
+    const schedule = await getStaffWorkingSchedule(db, nextStaffId, settings);
 
     if (!isWorkingAppointment(nextAppointmentAt, duration, schedule)) {
       return json({ error: "Время записи находится вне рабочего графика клиники или уже прошло" }, 400);
