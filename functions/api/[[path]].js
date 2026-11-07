@@ -903,12 +903,83 @@ async function getPublicData(db) {
 }
 
 // ================================================
+// ЗАЩИТА ПУБЛИЧНОЙ ФОРМЫ ОТ СПАМА
+// ================================================
+
+async function checkPublicBookingRateLimit(request, db, env) {
+  await db.prepare(
+    `CREATE TABLE IF NOT EXISTS public_booking_rate_limits (
+      ip_hash TEXT PRIMARY KEY,
+      window_started_at INTEGER NOT NULL,
+      hits INTEGER NOT NULL DEFAULT 0
+    )`
+  ).run();
+
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const secret = env.SESSION_SECRET || "finesssim-public-booking";
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    encoder.encode(secret + ":" + ip)
+  );
+  const ipHash = Array.from(new Uint8Array(digest))
+    .map(byte => byte.toString(16).padStart(2, "0"))
+    .join("");
+
+  const now = Math.floor(Date.now() / 1000);
+  const windowSeconds = 15 * 60;
+  const result = await db.prepare(
+    `INSERT INTO public_booking_rate_limits (ip_hash, window_started_at, hits)
+     VALUES (?, ?, 1)
+     ON CONFLICT(ip_hash) DO UPDATE SET
+       hits = CASE
+         WHEN window_started_at <= ? THEN 1
+         ELSE hits + 1
+       END,
+       window_started_at = CASE
+         WHEN window_started_at <= ? THEN ?
+         ELSE window_started_at
+       END
+     RETURNING hits, window_started_at`
+  ).bind(
+    ipHash,
+    now,
+    now - windowSeconds,
+    now - windowSeconds,
+    now
+  ).first();
+
+  if (Number(result?.hits || 0) === 1) {
+    await db.prepare(
+      "DELETE FROM public_booking_rate_limits WHERE window_started_at < ?"
+    ).bind(now - 24 * 60 * 60).run();
+  }
+
+  const hits = Number(result?.hits || 0);
+  const startedAt = Number(result?.window_started_at || now);
+  const retryAfter = Math.max(1, startedAt + windowSeconds - now);
+
+  return {
+    limited: hits > 12,
+    retryAfter
+  };
+}
+
+// ================================================
 // ПУБЛИЧНАЯ ЗАПИСЬ
 // ================================================
 
 async function createPublicBooking(request, db, env) {
   if (!validOrigin(request)) {
     return json({ error: "Запрос отклонён" }, 403);
+  }
+
+  const rateLimit = await checkPublicBookingRateLimit(request, db, env);
+  if (rateLimit.limited) {
+    return json(
+      { error: "Слишком много попыток записи. Попробуйте немного позже." },
+      429,
+      { "Retry-After": String(rateLimit.retryAfter) }
+    );
   }
 
   let body;
