@@ -1756,7 +1756,7 @@ async function createAdminBooking(request, db, env) {
   const schedule = await getStaffWorkingSchedule(db, staffId, settings);
 
   if (status !== "cancelled" && status !== "completed" && !isWorkingAppointment(appointmentAt, duration, schedule)) {
-    return json({ error: "Время записи находится вне рабочего графика клиники или уже прошло" }, 400);
+    return json({ error: "Время записи находится вне рабочего графика специалиста или уже прошло" }, 400);
   }
 
   if (staffId !== null && status !== "cancelled" && status !== "completed") {
@@ -2019,7 +2019,7 @@ async function updateBooking(request, db, id) {
 
   const appointmentChanged = (
     body.staff_id !== undefined || body.appointment_at !== undefined ||
-    body.service_id !== undefined || body.service !== undefined ||
+    ((body.service_id !== undefined || body.service !== undefined) && nextStatus !== "completed") ||
     (body.status !== undefined && nextStatus !== "completed" && nextStatus !== "cancelled")
   );
 
@@ -2029,7 +2029,7 @@ async function updateBooking(request, db, id) {
     const schedule = await getStaffWorkingSchedule(db, nextStaffId, settings);
 
     if (!isWorkingAppointment(nextAppointmentAt, duration, schedule)) {
-      return json({ error: "Время записи находится вне рабочего графика клиники или уже прошло" }, 400);
+      return json({ error: "Время записи находится вне рабочего графика специалиста или уже прошло" }, 400);
     }
 
     if (nextStaffId !== null) {
