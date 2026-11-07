@@ -2340,6 +2340,80 @@ async function updateFinanceExpense(request, db, id) {
   return json({ success: true, id, changes: result.meta.changes });
 }
 
+
+// ================================================
+// ФИНАНСЫ: УДАЛЕНИЕ РАСХОДА С АУДИТОМ
+// ================================================
+
+async function ensureAuditTable(db) {
+  await db.prepare(
+    `CREATE TABLE IF NOT EXISTS admin_audit_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      actor TEXT NOT NULL,
+      action TEXT NOT NULL,
+      entity_type TEXT NOT NULL,
+      entity_id INTEGER,
+      details TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`
+  ).run();
+}
+
+async function deleteFinanceExpense(request, db, id) {
+  if (!validId(id)) {
+    return json({ error: "Некорректный номер расхода" }, 400);
+  }
+
+  await ensureAuditTable(db);
+
+  const existing = await db.prepare(
+    `SELECT id, type, amount, category, description, transaction_date
+     FROM finance_transactions
+     WHERE id = ?`
+  ).bind(id).first();
+
+  if (!existing || existing.type !== "expense") {
+    return json({ error: "Расход не найден. Доходы и сторно удалять нельзя." }, 404);
+  }
+
+  const details = JSON.stringify({
+    amount: Number(existing.amount || 0),
+    category: existing.category || "",
+    description: existing.description || "",
+    transaction_date: existing.transaction_date || ""
+  });
+
+  const results = await db.batch([
+    db.prepare(
+      `INSERT INTO admin_audit_log
+       (actor, action, entity_type, entity_id, details)
+       VALUES (?, ?, ?, ?, ?)`
+    ).bind("owner", "Удалил расход", "finance_expense", id, details),
+    db.prepare(
+      "DELETE FROM finance_transactions WHERE id = ? AND type = 'expense'"
+    ).bind(id)
+  ]);
+
+  if (!results?.[1]?.meta?.changes) {
+    return json({ error: "Не удалось удалить расход" }, 409);
+  }
+
+  return json({ success: true, id });
+}
+
+async function getAdminAuditLog(db) {
+  await ensureAuditTable(db);
+
+  const result = await db.prepare(
+    `SELECT id, actor, action, entity_type, entity_id, details, created_at
+     FROM admin_audit_log
+     ORDER BY id DESC
+     LIMIT 100`
+  ).all();
+
+  return json({ entries: result.results || [] });
+}
+
 // ================================================
 // ГЛАВНЫЙ ОБРАБОТЧИК API
 // ================================================
@@ -2486,6 +2560,14 @@ async function handleRequest(request, env) {
 
   if (financeExpenseMatch && method === "PUT") {
     return updateFinanceExpense(request, db, Number(financeExpenseMatch[1]));
+  }
+
+  if (financeExpenseMatch && method === "DELETE") {
+    return deleteFinanceExpense(request, db, Number(financeExpenseMatch[1]));
+  }
+
+  if (route === "/api/admin/audit" && method === "GET") {
+    return getAdminAuditLog(db);
   }
 
   // Все записи
