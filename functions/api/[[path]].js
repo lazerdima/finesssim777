@@ -903,6 +903,67 @@ async function getPublicData(db) {
 }
 
 // ================================================
+// ЗАЩИТА ВХОДА В ПАНЕЛЬ ВЛАДЕЛЬЦА
+// ================================================
+
+async function checkAdminLoginRateLimit(request, db, env) {
+  await db.prepare(
+    `CREATE TABLE IF NOT EXISTS admin_login_rate_limits (
+      ip_hash TEXT PRIMARY KEY,
+      window_started_at INTEGER NOT NULL,
+      hits INTEGER NOT NULL DEFAULT 0
+    )`
+  ).run();
+
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    encoder.encode(env.SESSION_SECRET + ":admin-login:" + ip)
+  );
+  const ipHash = Array.from(new Uint8Array(digest))
+    .map(byte => byte.toString(16).padStart(2, "0"))
+    .join("");
+
+  const now = Math.floor(Date.now() / 1000);
+  const windowSeconds = 15 * 60;
+  const result = await db.prepare(
+    `INSERT INTO admin_login_rate_limits (ip_hash, window_started_at, hits)
+     VALUES (?, ?, 1)
+     ON CONFLICT(ip_hash) DO UPDATE SET
+       hits = CASE
+         WHEN window_started_at <= ? THEN 1
+         ELSE hits + 1
+       END,
+       window_started_at = CASE
+         WHEN window_started_at <= ? THEN ?
+         ELSE window_started_at
+       END
+     RETURNING hits, window_started_at`
+  ).bind(
+    ipHash,
+    now,
+    now - windowSeconds,
+    now - windowSeconds,
+    now
+  ).first();
+
+  if (Number(result?.hits || 0) === 1) {
+    await db.prepare(
+      "DELETE FROM admin_login_rate_limits WHERE window_started_at < ?"
+    ).bind(now - 24 * 60 * 60).run();
+  }
+
+  const hits = Number(result?.hits || 0);
+  const startedAt = Number(result?.window_started_at || now);
+
+  return {
+    limited: hits > 10,
+    retryAfter: Math.max(1, startedAt + windowSeconds - now),
+    ipHash
+  };
+}
+
+// ================================================
 // ЗАЩИТА ПУБЛИЧНОЙ ФОРМЫ ОТ СПАМА
 // ================================================
 
@@ -2830,6 +2891,15 @@ async function handleRequest(request, env) {
       );
     }
 
+    const loginLimit = await checkAdminLoginRateLimit(request, db, env);
+    if (loginLimit.limited) {
+      return json(
+        { error: "Слишком много попыток входа. Попробуйте через 15 минут." },
+        429,
+        { "Retry-After": String(loginLimit.retryAfter) }
+      );
+    }
+
     let body;
 
     try {
@@ -2848,6 +2918,10 @@ async function handleRequest(request, env) {
     if (body.password !== env.ADMIN_PASSWORD) {
       return json({ error: "Неверный пароль" }, 401);
     }
+
+    await db.prepare(
+      "DELETE FROM admin_login_rate_limits WHERE ip_hash = ?"
+    ).bind(loginLimit.ipHash).run();
 
     const token = await createSession(env.SESSION_SECRET);
 
