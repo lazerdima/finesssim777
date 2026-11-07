@@ -1260,10 +1260,10 @@ async function handleServices(request, db, route, method) {
       title, description, price, image, duration, order
     ).run();
 
-    return json(
-      { success: true, id: result.meta.last_row_id },
-      201
-    );
+    await logAdminAction(db, "Добавил услугу", "service", result.meta.last_row_id, {
+      title, description, price, image_url: image, duration_minutes: duration, sort_order: order
+    });
+    return json({ success: true, id: result.meta.last_row_id }, 201);
   }
 
   const match = route.match(
@@ -1283,6 +1283,7 @@ async function handleServices(request, db, route, method) {
       return json({ error: "Услуга не найдена" }, 404);
     }
 
+    await logAdminAction(db, "Скрыл услугу", "service", id, { active: 0 });
     return json({ success: true, changes: result.meta.changes });
   }
 
@@ -1379,6 +1380,7 @@ async function handleServices(request, db, route, method) {
     return json({ error: "Услуга не найдена" }, 404);
   }
 
+  await logAdminAction(db, "Изменил услугу", "service", id, body);
   return json({ success: true, changes: result.meta.changes });
 }
 
@@ -1431,10 +1433,10 @@ async function handleStaff(request, db, route, method) {
       ) VALUES (?, ?, ?, ?, ?)`
     ).bind(name, position, description, photo, order).run();
 
-    return json(
-      { success: true, id: result.meta.last_row_id },
-      201
-    );
+    await logAdminAction(db, "Добавил сотрудника", "staff", result.meta.last_row_id, {
+      name, position, description, photo_url: photo, sort_order: order
+    });
+    return json({ success: true, id: result.meta.last_row_id }, 201);
   }
 
   const match = route.match(
@@ -1454,6 +1456,7 @@ async function handleStaff(request, db, route, method) {
       return json({ error: "Сотрудник не найден" }, 404);
     }
 
+    await logAdminAction(db, "Скрыл сотрудника", "staff", id, { active: 0 });
     return json({ success: true, changes: result.meta.changes });
   }
 
@@ -1530,6 +1533,7 @@ async function handleStaff(request, db, route, method) {
     return json({ error: "Сотрудник не найден" }, 404);
   }
 
+  await logAdminAction(db, "Изменил данные сотрудника", "staff", id, body);
   return json({ success: true, changes: result.meta.changes });
 }
 
