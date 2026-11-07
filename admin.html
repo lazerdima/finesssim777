@@ -510,15 +510,16 @@ input:focus,textarea:focus,select:focus{border-color:var(--green)}
     </div>
 
     <div class="card">
-      <div class="section-head"><h3>Журнал действий владельца</h3></div>
-      <div class="card">
-        <div class="section-head">
-          <h3>Резервная копия базы</h3>
-          <button class="btn btn-light btn-small" id="downloadBackupButton" type="button">СКАЧАТЬ BACKUP JSON</button>
-        </div>
-        <p class="muted">Копия настроек, услуг, сотрудников, записей, финансов и журнала действий. Файл содержит персональные данные клиентов — храните его в безопасном месте.</p>
-        <div class="message" id="backupMessage" role="status"></div>
+      <div class="section-head">
+        <h3>Резервная копия базы</h3>
+        <button class="btn btn-light btn-small" id="downloadBackupButton" type="button">СКАЧАТЬ BACKUP JSON</button>
       </div>
+      <p class="muted">Копия настроек, услуг, сотрудников, записей, финансов и журнала действий. Файл содержит персональные данные клиентов — храните его в безопасном месте.</p>
+      <div class="message" id="backupMessage" role="status"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-head"><h3>Журнал действий владельца</h3></div>
       <div id="financeAuditLog"><div class="finance-empty">Загрузка журнала...</div></div>
     </div>
   </section>
