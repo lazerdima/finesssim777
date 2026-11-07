@@ -410,6 +410,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--green)}
         <option value="completed">Завершённые</option>
         <option value="cancelled">Отменённые</option>
       </select>
+      <input id="bookingSearch" type="search" placeholder="Поиск: клиент, телефон, услуга" aria-label="Поиск записей">
       <span id="bookingCount" class="booking-count"></span>
     </div>
 
@@ -501,6 +502,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--green)}
     <div class="card">
       <div class="section-head">
         <h3>История операций</h3>
+        <button class="btn btn-light btn-small" id="exportFinanceButton" type="button">СКАЧАТЬ CSV</button>
       </div>
       <div id="financeTransactions">
         <div class="finance-empty">Загрузка финансовых операций...</div>
@@ -933,6 +935,7 @@ async function loadAll() {
     loadStaff(),
     loadBookings()
   ]);
+  renderBookings();
 }
 
 document.querySelectorAll(".tab").forEach(button => {
@@ -1222,6 +1225,17 @@ function toDateTimeLocal(value) {
   return localDate.toISOString().slice(0,16);
 }
 
+function serviceOptions(selectedId) {
+  const activeServices = allServices.filter(service =>
+    Number(service.active) === 1 || service.active === true
+  );
+  return activeServices.map(service => `
+    <option value="${Number(service.id)}" ${String(service.id) === String(selectedId) ? "selected" : ""}>
+      ${escapeHTML(service.title)}
+    </option>
+  `).join("");
+}
+
 function staffOptions(selectedId) {
   const activeStaff = allStaff.filter(person =>
     Number(person.active) === 1 || person.active === true
@@ -1423,6 +1437,19 @@ function bookingCard(item) {
         </div>
       </div>
 
+      <div class="appointment-box">
+        <h4>Данные клиента и услуги</h4>
+        <div class="appointment-grid">
+          <div><label>Имя клиента</label><input class="booking-client-name" maxlength="120" value="${escapeHTML(item.client_name || "")}"></div>
+          <div><label>Телефон</label><input class="booking-phone" type="tel" maxlength="40" value="${escapeHTML(item.phone || "")}"></div>
+          <div><label>Услуга</label><select class="booking-service">${serviceOptions(item.service_id)}</select></div>
+          <div><label>Комментарий</label><textarea class="booking-notes" maxlength="2000">${escapeHTML(item.notes || item.message || "")}</textarea></div>
+        </div>
+        <div class="actions">
+          <button class="btn save-booking-details" type="button">СОХРАНИТЬ ДАННЫЕ</button>
+        </div>
+      </div>
+
       <div class="booking-controls">
         <label>
           <span class="note">Статус записи</span>
@@ -1480,10 +1507,15 @@ function bookingCard(item) {
 
 function renderBookings() {
   const filter = $("#bookingFilter").value;
+  const query = ($("#bookingSearch")?.value || "").trim().toLocaleLowerCase("ru");
 
-  const filtered = filter === "all"
-    ? allBookings
-    : allBookings.filter(item => item.status === filter);
+  const filtered = allBookings.filter(item => {
+    const statusMatches = filter === "all" || item.status === filter;
+    const searchText = [
+      item.client_name, item.phone, item.service, item.staff_name
+    ].join(" ").toLocaleLowerCase("ru");
+    return statusMatches && (!query || searchText.includes(query));
+  });
 
   $("#bookingCount").textContent =
     `Всего: ${allBookings.length} · Показано: ${filtered.length}`;
@@ -1520,14 +1552,16 @@ async function loadBookings() {
 
 $("#refreshBookingsButton").addEventListener("click", loadBookings);
 $("#bookingFilter").addEventListener("change", renderBookings);
+$("#bookingSearch").addEventListener("input", renderBookings);
 
 $("#bookingsList").addEventListener("click", async event => {
   const statusButton = event.target.closest(".save-booking-status");
   const appointmentButton = event.target.closest(".save-booking-appointment");
+  const detailsButton = event.target.closest(".save-booking-details");
 
-  if (!statusButton && !appointmentButton) return;
+  if (!statusButton && !appointmentButton && !detailsButton) return;
 
-  const button = statusButton || appointmentButton;
+  const button = statusButton || appointmentButton || detailsButton;
   const card = button.closest(".booking-card");
   const id = card.dataset.id;
   const statusMessage = card.querySelector(".booking-card-message");
@@ -1579,6 +1613,30 @@ $("#bookingsList").addEventListener("click", async event => {
 
       // Обновляем финансовые данные, если они уже открывались.
       if (financeLoaded) loadFinance();
+    }
+
+    if (detailsButton) {
+      const clientName = card.querySelector(".booking-client-name").value.trim();
+      const phone = card.querySelector(".booking-phone").value.trim();
+      const serviceId = Number(card.querySelector(".booking-service").value);
+      const notes = card.querySelector(".booking-notes").value.trim();
+
+      if (clientName.length < 2 || clientName.length > 120) {
+        throw new Error("Имя клиента должно содержать от 2 до 120 символов.");
+      }
+      const phoneDigits = phone.replace(/\D/g, "");
+      if (phoneDigits.length < 7 || phoneDigits.length > 15) {
+        throw new Error("Проверь телефон клиента.");
+      }
+      if (!Number.isInteger(serviceId) || serviceId < 1) {
+        throw new Error("Выбери услугу.");
+      }
+
+      await api("/admin/bookings/" + id, "PUT", {
+        client_name: clientName, phone, service_id: serviceId, notes
+      });
+      message(statusMessage, "Данные записи обновлены.", "success");
+      await loadBookings();
     }
 
     if (appointmentButton) {
@@ -1800,9 +1858,36 @@ async function loadAuditLog() {
     container.innerHTML = entries.map(entry => {
       let details = {};
       try { details = JSON.parse(entry.details || "{}"); } catch {}
-      const parts = [details.category || "Расход", details.amount ? rubles(details.amount) : "", details.transaction_date || ""].filter(Boolean);
+      const parts = [];
+      if (details.category) parts.push(details.category);
+      if (details.amount) parts.push(rubles(details.amount));
+      if (details.transaction_date) parts.push(details.transaction_date);
+      if (details.client_name) parts.push("Клиент: " + details.client_name);
+      if (details.service) parts.push("Услуга: " + details.service);
+      if (details.appointment_at) parts.push("Приём: " + details.appointment_at);
+      if (details.title) parts.push(details.title);
+      if (details.name) parts.push(details.name);
       if (details.description) parts.push(details.description);
-      return '<div class="finance-audit-entry"><strong>' + escapeHTML(entry.action || "Действие") + '</strong><div>' + escapeHTML(parts.join(" · ")) + '</div><div class="finance-audit-meta">' + escapeHTML(entry.actor || "owner") + ' · ' + escapeHTML(entry.created_at || "") + ' · ID ' + Number(entry.entity_id || 0) + '</div></div>';
+      if (details.before && details.after) {
+        if (details.before.status !== details.after.status) {
+          parts.push("Статус: " + (STATUS_LABELS[details.before.status] || details.before.status) +
+            " → " + (STATUS_LABELS[details.after.status] || details.after.status));
+        }
+        if (details.before.appointment_at !== details.after.appointment_at) {
+          parts.push("Время: " + (details.before.appointment_at || "не назначено") +
+            " → " + (details.after.appointment_at || "не назначено"));
+        }
+      }
+      const canRestore = entry.action === "Удалил расход" &&
+        entry.entity_type === "finance_expense" && !entry.restored_at;
+      const restored = Boolean(entry.restored_at);
+      return '<div class="finance-audit-entry"><strong>' + escapeHTML(entry.action || "Действие") + '</strong>' +
+        '<div>' + escapeHTML(parts.join(" · ") || "Изменение сохранено") + '</div>' +
+        '<div class="finance-audit-meta">' + escapeHTML(entry.actor || "owner") + ' · ' +
+        escapeHTML(entry.created_at || "") + ' · ID ' + Number(entry.entity_id || 0) +
+        (restored ? ' · ВОССТАНОВЛЕНО' : '') + '</div>' +
+        (canRestore ? '<div class="actions"><button class="btn btn-light btn-small" type="button" data-restore-expense="' +
+          Number(entry.id) + '">ВОССТАНОВИТЬ РАСХОД</button></div>' : '') + '</div>';
     }).join("");
   } catch (error) {
     container.innerHTML = '<div class="finance-empty">Не удалось загрузить журнал действий.</div>';
@@ -1859,7 +1944,56 @@ async function loadFinance() {
   }
 }
 
+function exportFinanceCSV() {
+  if (!financeTransactions.length) {
+    message($("#financeMessage"), "Нет операций для экспорта за выбранный период.", "error");
+    return;
+  }
+  const columns = ["Дата", "Тип", "Категория", "Сумма, RUB", "Клиент", "Услуга", "Комментарий", "ID записи"];
+  const rows = financeTransactions.map(item => [
+    item.transaction_date || "",
+    transactionTypeLabel(item.type),
+    item.category || "",
+    Number(item.amount || 0),
+    item.client_name || "",
+    item.service_title || "",
+    item.description || "",
+    item.booking_id || ""
+  ]);
+  const csvCell = value => '"' + String(value ?? "").replace(/"/g, '""') + '"';
+  const csv = "\uFEFF" + [columns, ...rows].map(row => row.map(csvCell).join(";")).join("\r\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "finesssim-finance-" + $("#financeFrom").value + "-" + $("#financeTo").value + ".csv";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+$("#exportFinanceButton").addEventListener("click", exportFinanceCSV);
+
 $("#refreshFinanceButton").addEventListener("click", loadFinance);
+
+$("#financeAuditLog").addEventListener("click", async event => {
+  const button = event.target.closest("[data-restore-expense]");
+  if (!button) return;
+  const auditId = Number(button.dataset.restoreExpense);
+  if (!Number.isInteger(auditId) || auditId < 1) return;
+  if (!confirm("Восстановить этот расход? Он снова попадёт в финансовые расчёты.")) return;
+  button.disabled = true;
+  message($("#financeMessage"), "Восстанавливаем расход...");
+  try {
+    await api("/admin/audit/" + auditId + "/restore", "POST", {});
+    message($("#financeMessage"), "Расход восстановлен и снова учитывается в отчёте.", "success");
+    await loadFinance();
+  } catch (error) {
+    message($("#financeMessage"), error.message, "error");
+  } finally {
+    button.disabled = false;
+  }
+});
 
 $("#financeTransactions").addEventListener("click", async event => {
   const button = event.target.closest("[data-delete-expense]");
