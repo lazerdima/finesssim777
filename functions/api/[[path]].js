@@ -2648,6 +2648,143 @@ async function createDatabaseBackup(db) {
   });
 }
 
+async function restoreDatabaseBackup(request, db) {
+  const contentLength = Number(request.headers.get("Content-Length") || 0);
+  if (contentLength > 5 * 1024 * 1024) {
+    return json({ error: "Файл слишком большой. Максимальный размер — 5 МБ." }, 413);
+  }
+
+  let raw;
+  try {
+    raw = await request.text();
+  } catch {
+    return json({ error: "Не удалось прочитать файл резервной копии" }, 400);
+  }
+  if (!raw || raw.length > 5 * 1024 * 1024) {
+    return json({ error: "Файл пустой или превышает 5 МБ" }, 400);
+  }
+
+  let backup;
+  try {
+    backup = JSON.parse(raw);
+  } catch {
+    return json({ error: "Файл содержит некорректный JSON" }, 400);
+  }
+
+  const tableNames = [
+    "site_settings", "services", "staff", "staff_schedules",
+    "bookings", "finance_transactions", "admin_audit_log"
+  ];
+  if (
+    !backup ||
+    backup.format !== "finesssim-d1-backup" ||
+    backup.version !== 1 ||
+    !backup.tables ||
+    typeof backup.tables !== "object" ||
+    Array.isArray(backup.tables) ||
+    tableNames.some(name => !Array.isArray(backup.tables[name]))
+  ) {
+    return json({ error: "Формат резервной копии не поддерживается или файл повреждён" }, 400);
+  }
+
+  const totalRows = tableNames.reduce((sum, name) => sum + backup.tables[name].length, 0);
+  if (totalRows > 700) {
+    return json({ error: "В копии слишком много строк для безопасного восстановления за один запрос (максимум 700)" }, 413);
+  }
+
+  await ensureStaffScheduleTable(db);
+  await ensureAuditTable(db);
+
+  const schemas = {};
+  for (const table of tableNames) {
+    const info = await db.prepare(`PRAGMA table_info("${table}")`).all();
+    const columns = info.results || [];
+    if (!columns.length) {
+      return json({ error: "В базе отсутствует таблица " + table }, 500);
+    }
+    schemas[table] = columns;
+    const allowed = new Set(columns.map(column => column.name));
+
+    for (const row of backup.tables[table]) {
+      if (!row || typeof row !== "object" || Array.isArray(row)) {
+        return json({ error: "В копии обнаружена некорректная строка таблицы " + table }, 400);
+      }
+      const keys = Object.keys(row);
+      if (!keys.length || keys.some(key => !allowed.has(key))) {
+        return json({ error: "Структура данных таблицы " + table + " не совпадает с базой" }, 400);
+      }
+      for (const value of Object.values(row)) {
+        if (
+          value !== null &&
+          typeof value !== "string" &&
+          !(typeof value === "number" && Number.isFinite(value))
+        ) {
+          return json({ error: "В копии обнаружен недопустимый тип данных" }, 400);
+        }
+      }
+      for (const column of columns) {
+        if (
+          column.notnull &&
+          column.dflt_value === null &&
+          !column.pk &&
+          !Object.prototype.hasOwnProperty.call(row, column.name)
+        ) {
+          return json({ error: "В копии отсутствует обязательное поле " + column.name + " таблицы " + table }, 400);
+        }
+      }
+    }
+  }
+
+  const deleteOrder = [
+    "finance_transactions", "bookings", "staff_schedules",
+    "staff", "services", "site_settings", "admin_audit_log"
+  ];
+  const insertOrder = [
+    "site_settings", "services", "staff", "staff_schedules",
+    "bookings", "finance_transactions", "admin_audit_log"
+  ];
+
+  const statements = deleteOrder.map(table =>
+    db.prepare(`DELETE FROM "${table}"`)
+  );
+
+  for (const table of insertOrder) {
+    const columns = schemas[table].map(column => column.name);
+    for (const row of backup.tables[table]) {
+      const rowColumns = columns.filter(column => Object.prototype.hasOwnProperty.call(row, column));
+      const quotedColumns = rowColumns.map(column => '"' + column.replace(/"/g, '""') + '"').join(", ");
+      const placeholders = rowColumns.map(() => "?").join(", ");
+      const values = rowColumns.map(column => row[column]);
+      statements.push(
+        db.prepare(`INSERT INTO "${table}" (${quotedColumns}) VALUES (${placeholders})`).bind(...values)
+      );
+    }
+  }
+
+  statements.push(
+    db.prepare(
+      `INSERT INTO admin_audit_log (actor, action, entity_type, details)
+       VALUES ('owner', 'Восстановил базу из резервной копии', 'database_backup', ?)`
+    ).bind(JSON.stringify({
+      backup_created_at: backup.created_at || null,
+      restored_rows: totalRows
+    }))
+  );
+
+  try {
+    await db.batch(statements);
+  } catch (error) {
+    console.error("FINESSSIM backup restore failed:", error);
+    return json({ error: "База не была восстановлена. Проверьте совместимость файла и текущей версии базы." }, 409);
+  }
+
+  return json({
+    success: true,
+    restored_rows: totalRows,
+    restored_tables: tableNames.length
+  });
+}
+
 async function getAdminAuditLog(db) {
   await ensureAuditTable(db);
   const result = await db.prepare(
@@ -2812,6 +2949,10 @@ async function handleRequest(request, env) {
 
   if (route === "/api/admin/backup" && method === "GET") {
     return createDatabaseBackup(db);
+  }
+
+  if (route === "/api/admin/backup/restore" && method === "POST") {
+    return restoreDatabaseBackup(request, db);
   }
 
   if (route === "/api/admin/audit" && method === "GET") {
