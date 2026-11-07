@@ -139,6 +139,17 @@ input:focus,textarea:focus,select:focus{border-color:var(--green)}
   border-bottom:1px solid var(--line)
 }
 .finance-transaction:last-child{border-bottom:0}
+.finance-transaction-side{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:9px
+}
+.finance-edit-button{
+  padding:8px 10px;
+  min-height:32px;
+  font-size:10px
+}
 .finance-transaction-title{font-weight:bold;font-size:14px}
 .finance-transaction-description{
   font-size:12px;
@@ -1749,8 +1760,17 @@ function renderFinanceTransactions(items) {
           <div class="finance-transaction-date">${escapeHTML(date)}</div>
           <span class="finance-type">${transactionTypeLabel(type)}</span>
         </div>
-        <div class="finance-amount ${transactionAmountClass(type)}">
-          ${sign}${rubles(amount)}
+        <div class="finance-transaction-side">
+          <div class="finance-amount ${transactionAmountClass(type)}">
+            ${sign}${rubles(amount)}
+          </div>
+          ${type === "expense" ? `
+            <button
+              class="btn btn-light finance-edit-button"
+              type="button"
+              data-edit-expense="${Number(item.id)}"
+            >РЕДАКТИРОВАТЬ</button>
+          ` : ""}
         </div>
       </div>
     `;
@@ -1807,6 +1827,88 @@ async function loadFinance() {
 }
 
 $("#refreshFinanceButton").addEventListener("click", loadFinance);
+
+$("#financeTransactions").addEventListener("click", async event => {
+  const button = event.target.closest("[data-edit-expense]");
+  if (!button) return;
+
+  const id = Number(button.dataset.editExpense);
+  const item = financeTransactions.find(row =>
+    Number(row.id) === id && row.type === "expense"
+  );
+
+  if (!item) {
+    message($("#financeMessage"), "Расход не найден. Обнови список операций.", "error");
+    return;
+  }
+
+  const category = prompt(
+    "Категория расхода:",
+    item.category || "Прочее"
+  );
+  if (category === null) return;
+
+  const amountText = prompt(
+    "Сумма расхода в рублях:",
+    String(item.amount ?? "")
+  );
+  if (amountText === null) return;
+
+  const date = prompt(
+    "Дата расхода (ГГГГ-ММ-ДД):",
+    String(item.transaction_date || item.date || "").slice(0, 10)
+  );
+  if (date === null) return;
+
+  const description = prompt(
+    "Комментарий к расходу:",
+    item.description || ""
+  );
+  if (description === null) return;
+
+  const amount = Number(amountText.trim());
+  const cleanCategory = category.trim();
+
+  if (!Number.isSafeInteger(amount) || amount < 1 || amount > 10000000) {
+    message($("#financeMessage"), "Сумма должна быть целым числом от 1 до 10 000 000 рублей.", "error");
+    return;
+  }
+
+  if (cleanCategory.length < 2 || cleanCategory.length > 100) {
+    message($("#financeMessage"), "Укажи категорию длиной от 2 до 100 символов.", "error");
+    return;
+  }
+
+  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(date) ||
+      Number.isNaN(Date.parse(date + "T00:00:00"))) {
+    message($("#financeMessage"), "Дата должна быть в формате ГГГГ-ММ-ДД.", "error");
+    return;
+  }
+
+  if (description.length > 500) {
+    message($("#financeMessage"), "Комментарий не должен превышать 500 символов.", "error");
+    return;
+  }
+
+  button.disabled = true;
+  message($("#financeMessage"), "Сохраняем изменения расхода...");
+
+  try {
+    await api("/admin/finance/expenses/" + id, "PUT", {
+      amount,
+      category: cleanCategory,
+      transaction_date: date,
+      description
+    });
+
+    message($("#financeMessage"), "Расход успешно обновлён.", "success");
+    await loadFinance();
+  } catch (error) {
+    message($("#financeMessage"), error.message, "error");
+  } finally {
+    button.disabled = false;
+  }
+});
 $("#applyFinanceFilter").addEventListener("click", loadFinance);
 
 $("#expenseForm").addEventListener("submit", async event => {
