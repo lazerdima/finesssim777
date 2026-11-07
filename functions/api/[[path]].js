@@ -2628,6 +2628,26 @@ async function restoreDeletedExpense(request, db, auditId) {
   return json({ success: true, id: results[0].meta.last_row_id, audit_id: Number(auditId) });
 }
 
+async function createDatabaseBackup(db) {
+  await ensureStaffScheduleTable(db);
+  await ensureAuditTable(db);
+  const tableNames = [
+    "site_settings", "services", "staff", "staff_schedules",
+    "bookings", "finance_transactions", "admin_audit_log"
+  ];
+  const tables = {};
+  for (const table of tableNames) {
+    const result = await db.prepare(`SELECT * FROM ${table} ORDER BY rowid`).all();
+    tables[table] = result.results || [];
+  }
+  return json({
+    format: "finesssim-d1-backup",
+    version: 1,
+    created_at: new Date().toISOString(),
+    tables
+  });
+}
+
 async function getAdminAuditLog(db) {
   await ensureAuditTable(db);
   const result = await db.prepare(
@@ -2790,7 +2810,7 @@ async function handleRequest(request, env) {
     return deleteFinanceExpense(request, db, Number(financeExpenseMatch[1]));
   }
 
-  if (route === "/api/admin/audit" && method === "GET") {
+  if (route === "/api/admin/backup" && method === "GET") {\n    return createDatabaseBackup(db);\n  }\n\n  if (route === "/api/admin/audit" && method === "GET") {
     return getAdminAuditLog(db);
   }
 
