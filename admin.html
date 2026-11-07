@@ -1879,7 +1879,7 @@ $("#financeTransactions").addEventListener("click", async event => {
     return;
   }
 
-  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(date) ||
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) ||
       Number.isNaN(Date.parse(date + "T00:00:00"))) {
     message($("#financeMessage"), "Дата должна быть в формате ГГГГ-ММ-ДД.", "error");
     return;
