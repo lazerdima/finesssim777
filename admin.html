@@ -2132,7 +2132,7 @@ $("#expenseForm").addEventListener("submit", async event => {
     await api("/admin/finance/expenses", "POST", {
       category,
       amount,
-      date,
+      transaction_date: date,
       description
     });
 
