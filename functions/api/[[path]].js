@@ -2810,7 +2810,11 @@ async function handleRequest(request, env) {
     return deleteFinanceExpense(request, db, Number(financeExpenseMatch[1]));
   }
 
-  if (route === "/api/admin/backup" && method === "GET") {\n    return createDatabaseBackup(db);\n  }\n\n  if (route === "/api/admin/audit" && method === "GET") {
+  if (route === "/api/admin/backup" && method === "GET") {
+    return createDatabaseBackup(db);
+  }
+
+  if (route === "/api/admin/audit" && method === "GET") {
     return getAdminAuditLog(db);
   }
 
