@@ -2481,7 +2481,7 @@ async function handleRequest(request, env) {
   }
 
   const financeExpenseMatch = route.match(
-    /^\\/api\\/admin\\/finance\\/expenses\\/(\\d+)$/
+    /^\/api\/admin\/finance\/expenses\/(\d+)$/
   );
 
   if (financeExpenseMatch && method === "PUT") {
