@@ -150,6 +150,10 @@ input:focus,textarea:focus,select:focus{border-color:var(--green)}
   min-height:32px;
   font-size:10px
 }
+.finance-delete-button{padding:8px 10px;min-height:32px;font-size:10px;background:#fff1ef;color:#a63228;border:1px solid #f0c8c3}
+.finance-audit-entry{padding:13px 0;border-bottom:1px solid var(--line);font-size:12px;line-height:1.55}
+.finance-audit-entry:last-child{border-bottom:0}
+.finance-audit-meta{color:var(--muted);font-size:11px}
 .finance-transaction-title{font-weight:bold;font-size:14px}
 .finance-transaction-description{
   font-size:12px;
@@ -501,6 +505,11 @@ input:focus,textarea:focus,select:focus{border-color:var(--green)}
       <div id="financeTransactions">
         <div class="finance-empty">Загрузка финансовых операций...</div>
       </div>
+    </div>
+
+    <div class="card">
+      <div class="section-head"><h3>Журнал действий владельца</h3></div>
+      <div id="financeAuditLog"><div class="finance-empty">Загрузка журнала...</div></div>
     </div>
   </section>
 
@@ -1770,11 +1779,34 @@ function renderFinanceTransactions(items) {
               type="button"
               data-edit-expense="${Number(item.id)}"
             >РЕДАКТИРОВАТЬ</button>
+            <button class="btn finance-delete-button" type="button" data-delete-expense="${Number(item.id)}">УДАЛИТЬ</button>
           ` : ""}
         </div>
       </div>
     `;
   }).join("");
+}
+
+async function loadAuditLog() {
+  const container = $("#financeAuditLog");
+  if (!container) return;
+  try {
+    const data = await api("/admin/audit");
+    const entries = Array.isArray(data.entries) ? data.entries : [];
+    if (!entries.length) {
+      container.innerHTML = '<div class="finance-empty">Действий пока нет.</div>';
+      return;
+    }
+    container.innerHTML = entries.map(entry => {
+      let details = {};
+      try { details = JSON.parse(entry.details || "{}"); } catch {}
+      const parts = [details.category || "Расход", details.amount ? rubles(details.amount) : "", details.transaction_date || ""].filter(Boolean);
+      if (details.description) parts.push(details.description);
+      return '<div class="finance-audit-entry"><strong>' + escapeHTML(entry.action || "Действие") + '</strong><div>' + escapeHTML(parts.join(" · ")) + '</div><div class="finance-audit-meta">' + escapeHTML(entry.actor || "owner") + ' · ' + escapeHTML(entry.created_at || "") + ' · ID ' + Number(entry.entity_id || 0) + '</div></div>';
+    }).join("");
+  } catch (error) {
+    container.innerHTML = '<div class="finance-empty">Не удалось загрузить журнал действий.</div>';
+  }
 }
 
 async function loadFinance() {
@@ -1815,6 +1847,7 @@ async function loadFinance() {
       (summary.profit >= 0 ? "finance-income" : "finance-expense");
 
     renderFinanceTransactions(getFinanceItems(data));
+    await loadAuditLog();
 
     message($("#financeMessage"), "Финансовые данные обновлены.", "success");
     financeLoaded = true;
@@ -1828,6 +1861,32 @@ async function loadFinance() {
 
 $("#refreshFinanceButton").addEventListener("click", loadFinance);
 
+$("#financeTransactions").addEventListener("click", async event => {
+  const button = event.target.closest("[data-delete-expense]");
+  if (!button) return;
+  const id = Number(button.dataset.deleteExpense);
+  const item = financeTransactions.find(row => Number(row.id) === id && row.type === "expense");
+  if (!item) {
+    message($("#financeMessage"), "Расход не найден. Обнови список операций.", "error");
+    return;
+  }
+  const confirmed = confirm(
+    "Удалить расход «" + (item.category || "Расход") + "» на сумму " + rubles(Number(item.amount || 0)) + "?\n\n" +
+    "Он исчезнет из расчётов, но сведения о нём сохранятся в журнале действий. Отменить удаление через интерфейс нельзя."
+  );
+  if (!confirmed) return;
+  button.disabled = true;
+  message($("#financeMessage"), "Удаляем расход и сохраняем запись в журнале...");
+  try {
+    await api("/admin/finance/expenses/" + id, "DELETE");
+    message($("#financeMessage"), "Расход удалён. Действие сохранено в журнале.", "success");
+    await loadFinance();
+  } catch (error) {
+    message($("#financeMessage"), error.message, "error");
+  } finally {
+    button.disabled = false;
+  }
+});
 $("#financeTransactions").addEventListener("click", async event => {
   const button = event.target.closest("[data-edit-expense]");
   if (!button) return;
