@@ -93,7 +93,7 @@ function safeText(value, maxLength = 500) {
 
 function validOrigin(request) {
   const origin = request.headers.get("Origin");
-  return !origin || origin === new URL(request.url).origin;
+  return origin !== null && origin === new URL(request.url).origin;
 }
 
 async function readBody(request) {
@@ -3096,18 +3096,32 @@ async function handleRequest(request, env) {
 // CLOUDFLARE PAGES FUNCTION
 // ================================================
 
+function addSecurityHeaders(response) {
+  const headers = new Headers(response.headers);
+  headers.set("X-Content-Type-Options", "nosniff");
+  headers.set("X-Frame-Options", "DENY");
+  headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  });
+}
+
 export async function onRequest(context) {
   try {
-    return await handleRequest(
+    const response = await handleRequest(
       context.request,
       context.env
     );
+    return addSecurityHeaders(response);
   } catch (error) {
     console.error("FINESSSIM API error:", error);
 
-    return json(
+    return addSecurityHeaders(json(
       { error: "Внутренняя ошибка сервера" },
       500
-    );
+    ));
   }
 }
