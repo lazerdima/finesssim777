@@ -2284,6 +2284,62 @@ async function createFinanceExpense(request, db) {
   );
 }
 
+
+async function updateFinanceExpense(request, db, id) {
+  let body;
+
+  try {
+    body = await readBody(request);
+  } catch {
+    return json({ error: "Некорректные данные" }, 400);
+  }
+
+  if (!validId(id)) {
+    return json({ error: "Некорректный номер расхода" }, 400);
+  }
+
+  const amount = parseRubles(body.amount);
+  const category = safeText(body.category, 100);
+  const description = safeText(body.description ?? "", 1000);
+  const date = body.transaction_date;
+
+  if (!amount) {
+    return json({ error: "Укажите корректную сумму расхода в рублях" }, 400);
+  }
+
+  if (!category || category.length < 2) {
+    return json({ error: "Укажите категорию расхода" }, 400);
+  }
+
+  if (description === null) {
+    return json({ error: "Комментарий слишком длинный" }, 400);
+  }
+
+  if (!validBookingDate(date)) {
+    return json({ error: "Укажите корректную дату расхода" }, 400);
+  }
+
+  const existing = await db.prepare(
+    "SELECT id, type FROM finance_transactions WHERE id = ?"
+  ).bind(id).first();
+
+  if (!existing || existing.type !== "expense") {
+    return json({ error: "Расход не найден" }, 404);
+  }
+
+  const result = await db.prepare(
+    `UPDATE finance_transactions
+     SET amount = ?, category = ?, description = ?, transaction_date = ?
+     WHERE id = ? AND type = 'expense'`
+  ).bind(amount, category, description, date, id).run();
+
+  if (!result.meta.changes) {
+    return json({ error: "Не удалось обновить расход" }, 404);
+  }
+
+  return json({ success: true, id, changes: result.meta.changes });
+}
+
 // ================================================
 // ГЛАВНЫЙ ОБРАБОТЧИК API
 // ================================================
@@ -2422,6 +2478,14 @@ async function handleRequest(request, env) {
     method === "POST"
   ) {
     return createFinanceExpense(request, db);
+  }
+
+  const financeExpenseMatch = route.match(
+    /^\/api\/admin\/finance\/expenses\/(\d+)$/
+  );
+
+  if (financeExpenseMatch && method === "PUT") {
+    return updateFinanceExpense(request, db, Number(financeExpenseMatch[1]));
   }
 
   // Все записи
