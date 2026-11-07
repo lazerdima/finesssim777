@@ -2735,6 +2735,14 @@ async function restoreDatabaseBackup(request, db) {
     }
   }
 
+  const totalBindings = tableNames.reduce(
+    (sum, table) => sum + backup.tables[table].reduce((tableSum, row) => tableSum + Object.keys(row).length, 0),
+    0
+  );
+  if (totalBindings > 4500) {
+    return json({ error: "В копии слишком много полей для безопасного восстановления за один запрос" }, 413);
+  }
+
   const deleteOrder = [
     "finance_transactions", "bookings", "staff_schedules",
     "staff", "services", "site_settings", "admin_audit_log"
