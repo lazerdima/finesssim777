@@ -1114,6 +1114,22 @@ function staffCard(item) {
           <input name="photo_url" type="url" maxlength="1000" value="${escapeHTML(item.photo_url)}">
         </div>
 
+        <div class="full">
+          <label>Рабочие дни (0 — воскресенье, 1 — понедельник ... 6 — суббота)</label>
+          <input name="working_days" maxlength="20" value="${escapeHTML(item.working_days || "1,2,3,4,5")}" placeholder="1,2,3,4,5">
+          <p class="field-hint">Укажи номера дней через запятую. Если график совпадает с графиком клиники, оставь текущие значения.</p>
+        </div>
+
+        <div>
+          <label>Начало приёма</label>
+          <input name="working_start" type="time" value="${escapeHTML(item.working_start || "09:00")}">
+        </div>
+
+        <div>
+          <label>Окончание приёма</label>
+          <input name="working_end" type="time" value="${escapeHTML(item.working_end || "18:00")}">
+        </div>
+
         <div>
           <label>Порядок</label>
           <input name="sort_order" type="number" value="${Number(item.sort_order) || 0}">
